@@ -1,0 +1,141 @@
+# -*- coding: utf-8 -*-
+
+# Sample Python code for youtube.captions.download
+# NOTE: This sample code downloads a file and can't be executed via this
+#       interface. To data this sample, you must run it locally using your
+#       own API credentials.
+
+# See instructions for running these code samples locally:
+# https://developers.google.com/explorer-help/code-samples#python
+
+import io
+import os
+import re
+
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+import googleapiclient.errors
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.errors import HttpError
+
+from typing import List, Tuple
+import requests
+
+from .parsers import get_channel_id_from_list_username_response, \
+    get_latest_video_ids_from_list_channel_activity_response, \
+    get_playlist_id_from_list_playlists, get_video_ids_from_playlist
+
+
+class YoutubeConnect:
+
+    '''
+    Class to connect and get information to Youtube Data API
+    '''
+
+    scopes: List[str] = ["https://www.googleapis.com/auth/youtube.readonly"]
+    api_service_name: str = "youtube"
+    api_version: str = "v3"
+    client_secrets_file: str = "credentials.json"
+
+    def __init__(self):
+
+        creds = None
+        if os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', self.scopes)
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                    self.client_secrets_file, self.scopes)
+                creds = flow.run_local_server(port=51369)
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
+
+        self.youtube = googleapiclient.discovery.build(
+            self.api_service_name, self.api_version, credentials=creds)
+
+    def get_channel_id_from_username(self, username: str) -> str:
+        # TODO: better error handling for requests, it should not just be exit(-1)
+        try:
+            request = self.youtube.channels().list(
+                part="id",
+                forUsername=username
+            )
+            response = request.execute()
+        except Exception as e:
+            print(f'An error occurred: {e}')
+            exit(-1)
+        # parsing the request
+        channel_id = get_channel_id_from_list_username_response(response)
+        return channel_id
+
+    @staticmethod
+    def get_channel_id_from_channel_link(link: str) -> str:
+
+        response = requests.get(link)
+        possible_channel_ids = re.findall(r'\?channel_id=(.*?)"', str(response.content))
+
+        assert len(set(possible_channel_ids)) == 1, "Having possibilities of multiple channel"
+
+        channel_id = possible_channel_ids[0]
+
+        return channel_id
+
+    def get_latest_videos(
+            self,
+            channel_id: str,
+            publish_date_after: str,
+            max_results: int = 50) -> List[str]:
+
+        try:
+            request = self.youtube.activities().list(
+                part="contentDetails",
+                channelId=channel_id,
+                maxResults=max_results,
+                publishedAfter=publish_date_after
+            )
+            response = request.execute()
+        except Exception as e:
+            print(f'An error occurred: {e}')
+            exit(-1)
+
+        new_videos = get_latest_video_ids_from_list_channel_activity_response(response)
+
+        return new_videos
+
+    def get_playlist_id(self, custom_playlist_name) -> Tuple[str, int]:
+        try:
+            request = self.youtube.playlists().list(
+                part="snippet,contentDetails",
+                maxResults=50,
+                mine=True
+            )
+            response = request.execute()
+        except Exception as e:
+            print(f'An error occurred: {e}')
+            exit(-1)
+
+        playlist_id, total_videos = get_playlist_id_from_list_playlists(response, custom_playlist_name)
+
+        return playlist_id, total_videos
+
+    def get_last_n_videos_from_playlist(self, playlist_id, n) -> List[str]:
+
+        assert n<=50, "Cant get more than 50 videos"
+
+        try:
+            request = self.youtube.playlistItems().list(
+                part="snippet, contentDetails",
+                maxResults=50,
+                playlistId=playlist_id
+            )
+            response = request.execute()
+        except Exception as e:
+            print(f'An error occurred: {e}')
+            exit(-1)
+
+        video_ids = get_video_ids_from_playlist(response, n)
+
+        return video_ids

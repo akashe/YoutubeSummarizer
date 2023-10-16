@@ -1,0 +1,15 @@
+{
+  "gpt-4": {
+    "max_allowed_token_len": 8192
+  },
+  "gpt-3.5-turbo-16k" : {
+    "max_allowed_token_len": 16385
+  },
+  "gpt-4-32k": {
+    "max_allowed_token_len": 32768
+  },
+  "gpt-3.5-turbo": {
+    "max_allowed_token_len": 4097
+  },
+  "tokens_for_prompt" : 120
+}
