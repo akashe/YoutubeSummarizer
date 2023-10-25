@@ -24,7 +24,8 @@ import requests
 
 from .parsers import get_channel_id_from_list_username_response, \
     get_latest_video_ids_from_list_channel_activity_response, \
-    get_playlist_id_from_list_playlists, get_video_ids_from_playlist
+    get_playlist_id_from_list_playlists, get_video_ids_from_playlist, \
+    get_video_title_from_list_video_id
 
 
 class YoutubeConnect:
@@ -120,6 +121,21 @@ class YoutubeConnect:
         playlist_id, total_videos = get_playlist_id_from_list_playlists(response, custom_playlist_name)
 
         return playlist_id, total_videos
+
+    def get_video_title(self, video_id: str) -> str:
+        try:
+            request = self.youtube.videos().list(
+                part="snippet",
+                id=video_id
+            )
+            response = request.execute()
+        except Exception as e:
+            print(f'An error occurred: {e}')
+            exit(-1)
+
+        video_title = get_video_title_from_list_video_id(response)
+
+        return video_title
 
     def get_last_n_videos_from_playlist(self, playlist_id, n) -> List[str]:
 

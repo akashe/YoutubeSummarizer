@@ -24,59 +24,64 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def get_time_encoded_transcripts(transcripts: List[Tuple[str, List[dict]]],
-                                 model_name: str) -> Tuple[bool, float, float, str, str]:
+def get_time_encoded_transcripts(transcript: List[dict],
+                                 model_name: str) -> Tuple[bool, float, float, str]:
     enc = tiktoken.encoding_for_model(model_name)
     model_max_token_len = get_model_max_len(model_name)
 
-    for id_, t in transcripts:
-        sentences = []
-        length_till_now = 0
-        all_start = 0.0
-        was_transcript_splitted = False
+    sentences = []
+    length_till_now = 0
+    all_start = 0.0
+    was_transcript_splitted = False
 
-        for dialogue in t:
-            text = dialogue["text"]
-            start = dialogue["start"]
-            duration = dialogue["duration"]
+    for dialogue in transcript:
+        text = dialogue["text"]
+        start = dialogue["start"]
+        duration = dialogue["duration"]
 
-            # To include for tokens added by joining all sentences.
-            enc_text = enc.encode(text + "\n")
+        # To include for tokens added by joining all sentences.
+        enc_text = enc.encode(text + "\n")
 
-            if len(enc_text) + length_till_now > model_max_token_len:
-                was_transcript_splitted = True
-                yield was_transcript_splitted, all_start, start + duration, id_, "\n".join(sentences)
-                sentences = [text]
-                all_start = start + duration
-                length_till_now = len(enc_text)
+        if len(enc_text) + length_till_now > model_max_token_len:
+            was_transcript_splitted = True
+            yield was_transcript_splitted, all_start, start + duration, "\n".join(sentences)
+            sentences = [text]
+            all_start = start + duration
+            length_till_now = len(enc_text)
 
-            else:
-                sentences.append(text)
-                length_till_now += len(enc_text)
+        else:
+            sentences.append(text)
+            length_till_now += len(enc_text)
 
-        yield was_transcript_splitted, all_start, start + duration, id_, "\n".join(sentences)
+    yield was_transcript_splitted, all_start, start + duration, "\n".join(sentences)
 
 
-def get_documents(transcripts: List[Tuple[str, List[dict]]],
-                              model_name: str) -> List[Document]:
+def get_documents(video_ids: List[str],
+                  video_titles: List[str],
+                  transcripts: List[List[dict]],
+                  model_name: str) -> List[Document]:
     documents = []
-    for did_split_happen, start, end, video_id, text in get_time_encoded_transcripts(transcripts, model_name):
-        start_min, start_sec = int(start / 60), int(start % 60)
-        end_min, end_sec = int(end / 60), int(end % 60)
 
-        documents.append(
-            Document(
-                page_content=text,
-                metadata={
-                    "source": "https://www.youtube.com/watch?v=" + video_id,
-                    "start_min": start_min,
-                    "start_sec": start_sec,
-                    "end_min": end_min,
-                    "end_sec": end_sec,
-                    "did_split_happen": did_split_happen
-                }
+    for video_id, video_title, transcript in zip(video_ids, video_titles, transcripts):
+        for did_split_happen, start, end, text in get_time_encoded_transcripts(transcript, model_name):
+
+            start_min, start_sec = int(start / 60), int(start % 60)
+            end_min, end_sec = int(end / 60), int(end % 60)
+
+            documents.append(
+                Document(
+                    page_content=text,
+                    metadata={
+                        "source": "https://www.youtube.com/watch?v=" + video_id,
+                        "start_min": start_min,
+                        "start_sec": start_sec,
+                        "end_min": end_min,
+                        "end_sec": end_sec,
+                        "did_split_happen": did_split_happen,
+                        "title": video_title
+                    }
+                )
             )
-        )
 
     return documents
 

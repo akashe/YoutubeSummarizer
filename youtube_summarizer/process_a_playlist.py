@@ -7,7 +7,7 @@ from youtube.get_information import YoutubeConnect
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
 
-from utils import check_supported_models, get_transcript_from_xml
+from utils import check_supported_models, get_transcript_from_xml, get_transcripts
 from get_chain import get_summary_of_each_video, get_documents, get_summary_with_keywords
 
 import logging
@@ -41,18 +41,14 @@ def main(
     logger.info(f"Processing last {total_video_to_process} videos from the playlist")
 
     video_ids = youtube_connect.get_last_n_videos_from_playlist(playlist_id, total_video_to_process)
-    print(video_ids)
 
-    transcripts = []
+    video_titles = []
     for video_id in video_ids:
-        try:
-            json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
-            clean_transcript = get_transcript_from_xml(json_transcript)
-            transcripts.append(clean_transcript)
-        except (TranscriptsDisabled,NoTranscriptAvailable, NoTranscriptFound):
-            logger.info(f'Subtitles unavailable for the video https://www.youtube.com/watch?v={video_id}')
+        video_titles.append(youtube_connect.get_video_title(video_id))
 
-    documents = get_documents(transcripts, model_name)
+    transcripts = get_transcripts(video_ids)
+
+    documents = get_documents(video_ids, video_titles, transcripts, model_name)
 
     try:
         if search_terms:
