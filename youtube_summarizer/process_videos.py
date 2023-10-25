@@ -7,7 +7,7 @@ from youtube.get_information import YoutubeConnect
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
 
-from utils import get_adjusted_iso_date_time, get_transcript_from_xml, check_supported_models
+from utils import get_adjusted_iso_date_time, get_transcript_from_xml, check_supported_models, get_transcripts
 from get_chain import get_summary_of_each_video, get_documents, get_summary_with_keywords
 
 import logging
@@ -29,24 +29,22 @@ def process_videos(
     model_name: str = "gpt-4"
 ) -> str:
 
+    youtube_connect = YoutubeConnect()
+
     # TO do check each link for correctness
     video_ids = [video.split("?v=")[1] for video in youtube_video_links]
 
-    logger.info(f"Analyzing a total of {len(video_ids)} videos")
-    print("\n")
-    print(f"Analyzing a total of {len(video_ids)} videos")
-    transcripts = []
+    video_titles = []
     for video_id in video_ids:
-        try:
-            json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
-            #clean_transcript = get_transcript_from_xml(json_transcript)
-            transcripts.append((video_id, json_transcript))
-        except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound):
-            logger.info(f'Subtitles unavailable for the video https://www.youtube.com/watch?v={video_id}')
-            print("\n")
-            print(f'English transcripts unavailable for the video https://www.youtube.com/watch?v={video_id}')
+        video_titles.append(youtube_connect.get_video_title(video_id))
 
-    documents = get_documents(transcripts, model_name)
+    logger.info(f"Analyzing {len(video_ids)} videos")
+    print("\n")
+    print(f"Analyzing {len(video_ids)} videos")
+
+    transcripts = get_transcripts(video_ids)
+
+    documents = get_documents(video_ids, video_titles, transcripts, model_name)
     try:
         if search_terms:
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
