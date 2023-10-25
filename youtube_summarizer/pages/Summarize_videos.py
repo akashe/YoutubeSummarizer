@@ -27,27 +27,27 @@ st.markdown(
 
 with st.form("Process videos"):
     try:
-        video_links = st.text_input("Enter list of youtube videos, separated by semicolon ';'",
-                       placeholder="https://www.youtube.com/watch?v=q8CHXefn7B4; https://www.youtube.com/watch?v=MVYrJJNdrEg")
+        video_links = st.text_input("Enter list of youtube videos, separated by comma",
+                       placeholder="https://www.youtube.com/watch?v=q8CHXefn7B4, https://www.youtube.com/watch?v=MVYrJJNdrEg")
 
-        video_links = video_links.strip().split(";")
+        video_links = video_links.strip().split(",")
         video_links = [video.strip() for video in video_links if video != ""]
         video_links = [video.split("&")[0] for video in video_links]
 
         print(video_links)
 
         url_check = [validators.url(video) for video in video_links]
-        video_check = ["watch" in video for video in video_links]
+        video_check = ["watch" in video or "youtu.be" in video for video in video_links]
 
         if not all(url_check) or not all(video_check):
             raise Exception
 
     except Exception as e:
-        st.error('Please enter valid youtube video urls separated by semi colon')
+        st.error('Please enter valid youtube video urls separated by comma')
 
     try:
-        search_terms = st.text_input("Enter topics you want summary for, separated by ;",
-                                     placeholder="nutrition; OpenAI; Narendra Modi")
+        search_terms = st.text_input("Enter topics you want summary for, separated by comma",
+                                     placeholder="nutrition, OpenAI, Israel")
 
         if len(search_terms) == 0:
             raise Exception
@@ -61,11 +61,11 @@ with st.form("Process videos"):
     to_out = st.empty()
 
     if not openai_api_key:
-        st.info("Please add your OpenAI key to continue.")
+        st.info("Please add your OpenAI key in the sidebar to continue.")
     elif submitted:
 
         if not search_terms == "":
-            search_terms = search_terms.split(";")
+            search_terms = search_terms.split(",")
             search_terms = [term.strip() for term in search_terms]
         else:
             search_terms = None
