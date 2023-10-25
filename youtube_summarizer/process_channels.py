@@ -48,7 +48,12 @@ def process_channels(
 
     logger.info(f"Analyzing a total of {len(latest_video_ids)} videos")
     print("\n")
-    print(f"Analyzing a total of {len(latest_video_ids)} videos")
+    if len(latest_video_ids) == 0:
+        print(f"No videos uploaded in the last {summary_of_n_weeks} week")
+    elif len(latest_video_ids) > 1:
+        print(f"Analyzing a total of {len(latest_video_ids)} videos")
+    else:
+        print(f"Analyzing a total of {len(latest_video_ids)} video")
 
     assert len(video_titles) == len(latest_video_ids)
 

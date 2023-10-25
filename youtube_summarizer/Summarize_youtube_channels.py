@@ -33,10 +33,10 @@ st.markdown(
 
 with st.form("YoutubeSummary"):
     try:
-        youtube_channels = st.text_input("Enter list of youtube channels, separated by semicolon ';'",
-                                         placeholder="https://www.youtube.com/c/lexfridman; https://www.youtube.com/@hubermanlab")
+        youtube_channels = st.text_input("Enter list of youtube channels, separated by comma",
+                                         placeholder="https://www.youtube.com/c/lexfridman, https://www.youtube.com/@hubermanlab")
 
-        youtube_channels = youtube_channels.strip().split(";")
+        youtube_channels = youtube_channels.strip().split(",")
         youtube_channels = [channel.strip() for channel in youtube_channels if channel != ""]
 
         url_check = [validators.url(channel) for channel in youtube_channels]
@@ -45,13 +45,13 @@ with st.form("YoutubeSummary"):
         if not all(url_check) or not all(youtube_urls):
             raise Exception
     except Exception as e:
-        st.error('Please enter valid urls separated by semi colon')
+        st.error('Please enter valid urls separated by comma')
 
     last_n_weeks = st.selectbox("Gather videos from the channels for last how many weeks?",
                                 (1, 2, 3))
     try:
-        search_terms = st.text_input("Enter topics you want summary for, separated by ;",
-                                     placeholder="nutrition; OpenAI; Narendra Modi")
+        search_terms = st.text_input("Enter topics you want summary for, separated by comma",
+                                     placeholder="nutrition, OpenAI, Israel")
 
         if len(search_terms) == 0:
             raise Exception
@@ -65,11 +65,11 @@ with st.form("YoutubeSummary"):
     to_out = st.empty()
 
     if not openai_api_key:
-        st.info("Please add your OpenAI key to continue.")
+        st.info("Please add your OpenAI key in the sidebar to continue.")
     elif submitted:
 
         if not search_terms == "":
-            search_terms = search_terms.split(";")
+            search_terms = search_terms.split(",")
             search_terms = [term.strip() for term in search_terms]
         else:
             search_terms = None

@@ -23,7 +23,7 @@ from prompts import get_per_document_with_keyword_prompt_template, \
 #["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
 #["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
 def process_videos(
-    youtube_video_links: List[str] = ["https://www.youtube.com/watch?v=MVYrJJNdrEg", "https://www.youtube.com/watch?v=e8qJsk1j2zE"],
+    youtube_video_links: List[str] = ["https://www.youtube.com/watch?v=MVYrJJNdrEg", "https://www.youtube.com/watch?v=e8qJsk1j2zE", "https://youtu.be/m8LnEp-4f2Y?si=ZgwnRQGp_DeztHdC", "https://m.youtube.com/watch?si=ZgwnRQGp_DeztHdC&v=m8LnEp-4f2Y&feature=youtu.be"],
     search_terms: List[str] = None,
     get_source: bool = False,
     model_name: str = "gpt-4"
@@ -32,7 +32,19 @@ def process_videos(
     youtube_connect = YoutubeConnect()
 
     # TO do check each link for correctness
-    video_ids = [video.split("?v=")[1] for video in youtube_video_links]
+    try:
+        video_ids = []
+        for link in youtube_video_links:
+            if "youtu.be" in link:
+                video_id = link.split("/")[-1].split("?")[0]
+            elif "m.youtube" in link:
+                video_id = link.split("&v=")[-1].split("&")[0]
+            else:
+                video_id = link.split("?v=")[1]
+            video_ids.append(video_id)
+    except Exception as e:
+        print("Enter valid urls")
+        return "-1"
 
     video_titles = []
     for video_id in video_ids:
@@ -40,7 +52,10 @@ def process_videos(
 
     logger.info(f"Analyzing {len(video_ids)} videos")
     print("\n")
-    print(f"Analyzing {len(video_ids)} videos")
+    if len(video_ids) > 1:
+        print(f"Analyzing {len(video_ids)} videos")
+    else:
+        print(f"Analyzing {len(video_ids)} video")
 
     transcripts = get_transcripts(video_ids)
 
