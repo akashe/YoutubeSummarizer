@@ -4,10 +4,8 @@ import argparse
 from typing import List
 
 from youtube.get_information import YoutubeConnect
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
 
-from utils import get_adjusted_iso_date_time, get_transcript_from_xml, check_supported_models
+from utils import get_adjusted_iso_date_time, get_transcript_from_xml, check_supported_models, get_transcripts
 from get_chain import get_summary_of_each_video, get_documents, get_summary_with_keywords
 
 import logging
@@ -44,21 +42,24 @@ def process_channels(
         if video_ids is not None:
             latest_video_ids.extend(video_ids)
 
+    video_titles = []
+    for video_id in latest_video_ids:
+        video_titles.append(youtube_connect.get_video_title(video_id))
+
     logger.info(f"Analyzing a total of {len(latest_video_ids)} videos")
     print("\n")
-    print(f"Analyzing a total of {len(latest_video_ids)} videos")
-    transcripts = []
-    for video_id in latest_video_ids:
-        try:
-            json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
-            #clean_transcript = get_transcript_from_xml(json_transcript)
-            transcripts.append((video_id, json_transcript))
-        except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound):
-            logger.info(f'Subtitles unavailable for the video https://www.youtube.com/watch?v={video_id}')
-            print("\n")
-            print(f'English transcripts unavailable for the video https://www.youtube.com/watch?v={video_id}')
+    if len(latest_video_ids) == 0:
+        print(f"No videos uploaded in the last {summary_of_n_weeks} week")
+    elif len(latest_video_ids) > 1:
+        print(f"Analyzing a total of {len(latest_video_ids)} videos")
+    else:
+        print(f"Analyzing a total of {len(latest_video_ids)} video")
 
-    documents = get_documents(transcripts, model_name)
+    assert len(video_titles) == len(latest_video_ids)
+
+    transcripts = get_transcripts(latest_video_ids)
+
+    documents = get_documents(latest_video_ids, video_titles, transcripts, model_name)
     try:
         if search_terms:
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)

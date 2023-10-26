@@ -24,59 +24,66 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def get_time_encoded_transcripts(transcripts: List[Tuple[str, List[dict]]],
-                                 model_name: str) -> Tuple[bool, float, float, str, str]:
+def get_time_encoded_transcripts(transcript: List[dict],
+                                 model_name: str) -> Tuple[bool, float, float, str]:
     enc = tiktoken.encoding_for_model(model_name)
     model_max_token_len = get_model_max_len(model_name)
 
-    for id_, t in transcripts:
-        sentences = []
-        length_till_now = 0
-        all_start = 0.0
-        was_transcript_splitted = False
+    sentences = []
+    length_till_now = 0
+    all_start = 0.0
+    was_transcript_splitted = False
 
-        for dialogue in t:
-            text = dialogue["text"]
-            start = dialogue["start"]
-            duration = dialogue["duration"]
+    for dialogue in transcript:
+        text = dialogue["text"]
+        start = dialogue["start"]
+        duration = dialogue["duration"]
 
-            # To include for tokens added by joining all sentences.
-            enc_text = enc.encode(text + "\n")
+        # To include for tokens added by joining all sentences.
+        enc_text = enc.encode(text + "\n")
 
-            if len(enc_text) + length_till_now > model_max_token_len:
-                was_transcript_splitted = True
-                yield was_transcript_splitted, all_start, start + duration, id_, "\n".join(sentences)
-                sentences = [text]
-                all_start = start + duration
-                length_till_now = len(enc_text)
+        if len(enc_text) + length_till_now > model_max_token_len:
+            was_transcript_splitted = True
+            yield was_transcript_splitted, all_start, start + duration, "\n".join(sentences)
+            sentences = [text]
+            all_start = start + duration
+            length_till_now = len(enc_text)
 
-            else:
-                sentences.append(text)
-                length_till_now += len(enc_text)
+        else:
+            sentences.append(text)
+            length_till_now += len(enc_text)
 
-        yield was_transcript_splitted, all_start, start + duration, id_, "\n".join(sentences)
+    yield was_transcript_splitted, all_start, start + duration, "\n".join(sentences)
 
 
-def get_documents(transcripts: List[Tuple[str, List[dict]]],
-                              model_name: str) -> List[Document]:
+def get_documents(video_ids: List[str],
+                  video_titles: List[str],
+                  transcripts: List[List[dict]],
+                  model_name: str) -> List[Document]:
     documents = []
-    for did_split_happen, start, end, video_id, text in get_time_encoded_transcripts(transcripts, model_name):
-        start_min, start_sec = int(start / 60), int(start % 60)
-        end_min, end_sec = int(end / 60), int(end % 60)
 
-        documents.append(
-            Document(
-                page_content=text,
-                metadata={
-                    "source": "https://www.youtube.com/watch?v=" + video_id,
-                    "start_min": start_min,
-                    "start_sec": start_sec,
-                    "end_min": end_min,
-                    "end_sec": end_sec,
-                    "did_split_happen": did_split_happen
-                }
+    for video_id, video_title, transcript in zip(video_ids, video_titles, transcripts):
+        for did_split_happen, start, end, text in get_time_encoded_transcripts(transcript, model_name):
+
+            start_min, start_sec = int(start / 60), int(start % 60)
+            end_min, end_sec = int(end / 60), int(end % 60)
+            video_start = abs(int(start))
+
+            documents.append(
+                Document(
+                    page_content=text,
+                    metadata={
+                        "source": "https://www.youtube.com/watch?v=" + video_id,
+                        "video_start": video_start,
+                        "start_min": start_min,
+                        "start_sec": start_sec,
+                        "end_min": end_min,
+                        "end_sec": end_sec,
+                        "did_split_happen": did_split_happen,
+                        "title": video_title
+                    }
+                )
             )
-        )
 
     return documents
 
@@ -124,14 +131,17 @@ def get_summary_with_keywords(documents: List[Document],
         print('\n')
 
         if d.metadata["did_split_happen"]:
-            print(f'Summary of video {d.metadata["source"]} from '
-                  f'{d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
+            print(f'Summary of video "{d.metadata["title"]}"'
+                  f' from {d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
                   f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
+            source_doc = d.metadata["source"] + f"&t={d.metadata['video_start']}s"
         else:
-            print(f'Summary of video {d.metadata["source"]}\n')
+            print(f'Summary of video "{d.metadata["title"]}"\n')
+            source_doc = d.metadata["source"]
+
         d_summary = per_document_llm_chain.run(context=d.page_content, summary_keywords=summary_keywords)
-        source_doc = d.metadata["source"]
         smaller_summaries.append((source_doc, d_summary))
+
         if 'gpt-4' in open_ai_model:
             logger.info(f'\nWaiting\n')
             print('\n')
@@ -205,11 +215,11 @@ def get_summary_of_each_video(documents: List[Document],
         logger.info(f'Summary {i}:\n')
         print('\n')
         if d.metadata["did_split_happen"]:
-            print(f'Summary of video {d.metadata["source"]} from '
+            print(f'Summary of video "{d.metadata["title"]}" from '
                   f'{d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
                   f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
         else:
-            print(f'Summary of video {d.metadata["source"]}\n')
+            print(f'Summary of video "{d.metadata["title"]}"\n')
 
         d_summary = per_document_llm_chain.run(context=d.page_content)
         if 'gpt-4' in open_ai_model:
@@ -218,7 +228,10 @@ def get_summary_of_each_video(documents: List[Document],
             print(f'Waiting to avoid token rate limits associated with GPT-4')
             time.sleep(47)
         summary += d_summary
-        summary += f"\n\nSource: https://www.youtube.com/watch?v={d.metadata['source']}\n"
+        summary += f"\n\nSource: https://www.youtube.com/watch?v={d.metadata['source']}"
+        if d.metadata["did_split_happen"]:
+            summary += f"&t={d.metadata['video_start']}s"
+        summary += "\n"
 
     return summary
 
