@@ -10,8 +10,7 @@ def get_channel_id_from_list_username_response(response: dict) -> str:
 
 
 def get_latest_video_ids_from_list_channel_activity_response(response: dict):
-
-    if "items" in response and len(response["items"])>0:
+    if "items" in response and len(response["items"]) > 0:
         channel_ids = []
         for item in response["items"]:
             if "upload" in item["contentDetails"]:
@@ -23,7 +22,6 @@ def get_latest_video_ids_from_list_channel_activity_response(response: dict):
 
 
 def get_playlist_id_from_list_playlists(response: dict, custom_playlist_name: str) -> Tuple[str, int]:
-
     playlist_items = response["items"]
     assert len(playlist_items) >= 1, "You have no playlists in your account"
 
@@ -40,10 +38,9 @@ def get_playlist_id_from_list_playlists(response: dict, custom_playlist_name: st
 
 
 def get_video_ids_from_playlist(response: dict, n: int) -> List[str]:
-
     video_details = response["items"]
 
-    assert len(video_details)>0, "No videos in the playlist"
+    assert len(video_details) > 0, "No videos in the playlist"
 
     video_ids = []
     for item in video_details:
@@ -54,3 +51,13 @@ def get_video_ids_from_playlist(response: dict, n: int) -> List[str]:
     video_ids = video_ids[-n:]
 
     return video_ids
+
+
+def get_video_title_from_list_video_id(response: dict) -> str:
+    video_details = response["items"]
+
+    assert len(video_details) == 1, "Multiple information for video ids"
+
+    title = video_details[0]["snippet"]["title"]
+
+    return title

@@ -1,5 +1,13 @@
 from datetime import datetime, timedelta
 import json
+from typing import List, Tuple
+
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
+
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 def get_adjusted_iso_date_time(summary_of_n_weeks: int) -> str:
@@ -31,3 +39,17 @@ def get_model_max_len(model_name:str) -> int:
 
     return model_max_len - tokens_for_prompt
 
+
+def get_transcripts(video_ids: List[str]) -> List[List[dict]]:
+
+    transcripts = []
+    for video_id in video_ids:
+        try:
+            json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
+            transcripts.append(json_transcript)
+        except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound):
+            logger.info(f'Subtitles unavailable for the video https://www.youtube.com/watch?v={video_id}')
+            print("\n")
+            print(f'English transcripts unavailable for the video https://www.youtube.com/watch?v={video_id}')
+
+    return transcripts
