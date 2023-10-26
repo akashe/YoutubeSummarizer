@@ -1,4 +1,4 @@
-import pdb
+import asyncio
 
 import argparse
 from typing import List
@@ -8,19 +8,19 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
 
 from utils import check_supported_models, get_transcript_from_xml, get_transcripts
-from get_chain import get_summary_of_each_video, get_documents, get_summary_with_keywords
+from get_chain import aget_summary_of_each_video, get_documents, aget_summary_with_keywords
 
 import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-from prompts import get_per_document_with_keyword_prompt_template,\
+from openai_prompts import get_per_document_with_keyword_prompt_template,\
     get_combine_document_prompt_template,\
     get_per_document_prompt_template, \
     get_combine_document_with_source_prompt_template
 
 
-def main(
+async def main(
     youtube_playlist_name: str = "data",
     last_n_videos: int = 10,
     search_terms: List[str] = ["AGI", "history", "spirituality", "human pyschology", "new developments in science"],
@@ -46,7 +46,7 @@ def main(
     for video_id in video_ids:
         video_titles.append(youtube_connect.get_video_title(video_id))
 
-    transcripts = get_transcripts(video_ids)
+    transcripts = get_transcripts(video_ids, video_titles)
 
     documents = get_documents(video_ids, video_titles, transcripts, model_name)
 
@@ -55,10 +55,10 @@ def main(
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
-            result = get_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
+            result = await aget_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
         else:
             per_document_template = get_per_document_prompt_template(model_name)
-            result = get_summary_of_each_video(documents, per_document_template, model_name)
+            result = await aget_summary_of_each_video(documents, per_document_template, model_name)
     except Exception as e:
         print(e)
     # TODO: fix what to do with results both here and channels file
@@ -84,4 +84,6 @@ if __name__ == "__main__":
 
     assert check_supported_models(args.model_name), "Model not available in config"
 
-    main(args.youtube_playlist_name, args.last_n_videos, args.search_terms, args.return_sources, args.model_name)
+    asyncio.run(
+        main(args.youtube_playlist_name, args.last_n_videos, args.search_terms, args.return_sources, args.model_name)
+    )

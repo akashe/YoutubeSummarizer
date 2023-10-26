@@ -2,18 +2,13 @@ import pdb
 import time
 import sys
 
-from langchain.chains import (
-    StuffDocumentsChain,
-    LLMChain,
-    ReduceDocumentsChain,
-    MapReduceDocumentsChain,
-)
+import openai
+from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain.llms import OpenAI
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import Document
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 from utils import get_model_max_len
 
@@ -64,7 +59,6 @@ def get_documents(video_ids: List[str],
 
     for video_id, video_title, transcript in zip(video_ids, video_titles, transcripts):
         for did_split_happen, start, end, text in get_time_encoded_transcripts(transcript, model_name):
-
             start_min, start_sec = int(start / 60), int(start % 60)
             end_min, end_sec = int(end / 60), int(end % 60)
             video_start = abs(int(start))
@@ -87,28 +81,81 @@ def get_documents(video_ids: List[str],
 
     return documents
 
-'''
-def get_documents(transcripts: List[Tuple[str, str]],
-                  open_ai_model: str) -> List[Document]:
-    enc = tiktoken.encoding_for_model(open_ai_model)
-    model_max_token_len = get_model_max_len(open_ai_model)
 
-    documents = []
-    for id_, t in transcripts:
-        encoded_transcript = enc.encode(t)
-        if len(encoded_transcript) > model_max_token_len:
-            documents.extend([
-                Document(
-                    page_content=enc.decode(encoded_transcript[i:i + model_max_token_len]),
-                    metadata={"source": "https://www.youtube.com/watch?v=" + id_}
-                )
-                for i in range(0, len(encoded_transcript), model_max_token_len)
-            ]
+def divide_big_summary_into_parts(summary: str, model_name: str) -> List[str]:
+    enc = tiktoken.encoding_for_model(model_name)
+    model_max_token_len = get_model_max_len(model_name)
+
+    encoded_summary = enc.encode(summary)
+
+    smaller_summaries = []
+    if len(encoded_summary) > model_max_token_len:
+        for i in range(0, len(encoded_summary), model_max_token_len):
+            smaller_summaries.append(
+                enc.decode(encoded_summary[i:i + model_max_token_len])
             )
-        else:
-            documents.append(Document(page_content=t, metadata={"source": "https://www.youtube.com/watch?v=" + id_}))
-    return documents
-'''
+    else:
+        smaller_summaries = [summary]
+
+    return smaller_summaries
+
+
+def get_updated_prompts(prompt_dict: dict,
+                        context: str,
+                        summary_keywords: Any = None) -> dict:
+    if prompt_dict["summary_keywords"]:
+        assert summary_keywords is not None
+        prompt_dict["system"] = prompt_dict["system"].format(summary_keywords=summary_keywords)
+
+    prompt_dict["user"] = prompt_dict["user"].format(context=context)
+
+    return prompt_dict
+
+
+async def aget_response_from_llm(model_name: str,
+                                 prompt_dict: dict,
+                                 context: str,
+                                 stream: bool = True,
+                                 summary_keywords: Any = None) -> str:
+    from aiohttp import ClientSession
+    openai.aiosession.set(ClientSession())
+
+    prompt_dict = get_updated_prompts(prompt_dict, context, summary_keywords)
+
+    pdb.set_trace()
+
+    response = await openai.ChatCompletion.acreate(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": prompt_dict["system"]},
+            {'role': 'user', 'content': prompt_dict["user"]}
+        ],
+        temperature=0,
+        stream=stream
+    )
+
+    if not stream:
+        output = response['choices'][0]["message"]["content"]
+    else:
+        collected_response = []
+        async for chunk in response:
+            try:
+                finish = chunk['choices'][0]["finish_reason"]
+                if not finish == "stop":
+                    chunk_message = chunk['choices'][0]['delta']["content"]  # extract the message
+                    sys.stdout.write(chunk_message)
+                    sys.stdout.flush()
+                    collected_response.append(chunk_message)
+            except:
+                pdb.set_trace()
+                continue
+
+        output = "".join(collected_response)
+
+    await openai.aiosession.get().close()
+
+    return output
+
 
 def get_summary_with_keywords(documents: List[Document],
                               keywords: List[str],
@@ -181,22 +228,67 @@ def get_summary_with_keywords(documents: List[Document],
                                        callbacks=[StreamingStdOutCallbackHandler()])
 
 
-def divide_big_summary_into_parts(summary: str, model_name: str) -> List[str]:
-    enc = tiktoken.encoding_for_model(model_name)
-    model_max_token_len = get_model_max_len(model_name)
-
-    encoded_summary = enc.encode(summary)
+async def aget_summary_with_keywords(documents: List[Document],
+                                     keywords: List[str],
+                                     per_document_template: dict,
+                                     combine_document_template: dict,
+                                     open_ai_model: str) -> str:
+    summary_keywords = ", ".join(keywords)
 
     smaller_summaries = []
-    if len(encoded_summary) > model_max_token_len:
-        for i in range(0, len(encoded_summary), model_max_token_len):
-            smaller_summaries.append(
-                enc.decode(encoded_summary[i:i + model_max_token_len])
-            )
-    else:
-        smaller_summaries = [summary]
+    for i, d in enumerate(documents):
+        logger.info(f'Summary {i}:\n')
+        print('\n')
 
-    return smaller_summaries
+        if d.metadata["did_split_happen"]:
+            print(f'Summary of video "{d.metadata["title"]}"'
+                  f' from {d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
+                  f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
+            source_doc = d.metadata["source"] + f"&t={d.metadata['video_start']}s"
+        else:
+            print(f'Summary of video "{d.metadata["title"]}"\n')
+            source_doc = d.metadata["source"]
+
+        d_summary = await aget_response_from_llm(model_name=open_ai_model,
+                                                 prompt_dict=per_document_template,
+                                                 context=d.page_content,
+                                                 summary_keywords=summary_keywords)
+
+        smaller_summaries.append((source_doc, d_summary))
+
+        if 'gpt-4' in open_ai_model:
+            logger.info(f'\nWaiting\n')
+            print('\n')
+            print(f'Waiting to avoid token rate limits associated with GPT-4')
+            time.sleep(47)
+
+    logger.info("Creating combined summary")
+    print('\n')
+    print("Creating combined summary")
+    print('\n')
+
+    big_summary = ""
+    for source, summary in smaller_summaries:
+        big_summary += f"Source: {source}\n Summary: {summary}\n\n"
+
+    summaries = divide_big_summary_into_parts(big_summary, open_ai_model)
+
+    while len(summaries) > 1:
+        smaller_chunks = ""
+        for smaller_summary in summaries:
+            smaller_chunks += await aget_response_from_llm(model_name=open_ai_model,
+                                                           prompt_dict=combine_document_template,
+                                                           context=smaller_summary,
+                                                           stream=False,
+                                                           summary_keywords=summary_keywords)
+
+        summaries = divide_big_summary_into_parts(smaller_chunks, open_ai_model)
+
+    final_summary = await aget_response_from_llm(model_name=open_ai_model,
+                                                 prompt_dict=combine_document_template,
+                                                 context=summaries[0],
+                                                 summary_keywords=summary_keywords)
+    return final_summary
 
 
 def get_summary_of_each_video(documents: List[Document],
@@ -236,54 +328,34 @@ def get_summary_of_each_video(documents: List[Document],
     return summary
 
 
-'''
-def get_chain_for_summary(documents, keywords):
-    # This controls how each document will be formatted. Specifically,
-    # it will be passed to `format_document` - see that function for more
-    # details.
+async def aget_summary_of_each_video(documents: List[Document],
+                                     per_document_template: dict,
+                                     open_ai_model: str) -> str:
 
-    summary_keywords = ", ".join(keywords)
+    summary = ""
+    for i, d in enumerate(documents):
+        logger.info(f'Summary {i}:\n')
+        print('\n')
+        if d.metadata["did_split_happen"]:
+            print(f'Summary of video "{d.metadata["title"]}" from '
+                  f'{d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
+                  f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
+        else:
+            print(f'Summary of video "{d.metadata["title"]}"\n')
 
-    llm_1 = OpenAI(model_name=open_ai_model)
+        d_summary = await aget_response_from_llm(model_name=open_ai_model,
+                                                 prompt_dict=per_document_template,
+                                                 context=d.page_content)
 
-    per_document_prompt = PromptTemplate(
-        template=per_document_prompt_template,
-        input_variables=["context", "summary_keywords"]
-    )
+        if 'gpt-4' in open_ai_model:
+            logger.info(f'\nWaiting\n')
+            print('\n')
+            print(f'Waiting to avoid token rate limits associated with GPT-4')
+            time.sleep(47)
+        summary += d_summary
+        summary += f"\n\nSource: https://www.youtube.com/watch?v={d.metadata['source']}"
+        if d.metadata["did_split_happen"]:
+            summary += f"&t={d.metadata['video_start']}s"
+        summary += "\n"
 
-    map_chain = LLMChain(llm=llm_1, prompt=per_document_prompt)
-
-    llm_2 = OpenAI(model_name=open_ai_model)
-    reduce_summary_prompt = PromptTemplate(
-        template=combine_document_prompt_template,
-        input_variables=["doc_summaries", "summary_keywords"]
-    )
-
-    reduce_chain = LLMChain(llm=llm_2, prompt=reduce_summary_prompt)
-
-    combine_documents_chain = StuffDocumentsChain(
-        llm_chain=reduce_chain, document_variable_name="doc_summaries"
-    )
-
-    reduce_documents_chain = ReduceDocumentsChain(
-        # This is final chain that is called.
-        combine_documents_chain=combine_documents_chain,
-        # If documents exceed context for `StuffDocumentsChain`
-        collapse_documents_chain=combine_documents_chain,
-        # The maximum number of tokens to group documents into.
-        token_max=model_max_token_len,
-    )
-
-    map_reduce_chain = MapReduceDocumentsChain(
-        # Map chain
-        llm_chain=map_chain,
-        # Reduce chain
-        reduce_documents_chain=reduce_documents_chain,
-        # The variable name in the llm_chain to put the documents in
-        document_variable_name="context",
-        # Return the results of the map steps in the output
-        return_intermediate_steps=False,
-    )
-
-    return map_reduce_chain.run(input_documents=documents, summary_keywords=summary_keywords)
-'''
+    return summary

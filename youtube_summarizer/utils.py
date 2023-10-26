@@ -40,16 +40,16 @@ def get_model_max_len(model_name:str) -> int:
     return model_max_len - tokens_for_prompt
 
 
-def get_transcripts(video_ids: List[str]) -> List[List[dict]]:
+def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[dict]]:
 
     transcripts = []
-    for video_id in video_ids:
+    for video_id, video_title in zip(video_ids, video_titles):
         try:
             json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
             transcripts.append(json_transcript)
         except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound):
-            logger.info(f'Subtitles unavailable for the video https://www.youtube.com/watch?v={video_id}')
+            logger.info(f'Subtitles unavailable for the video "{video_title}"')
             print("\n")
-            print(f'English transcripts unavailable for the video https://www.youtube.com/watch?v={video_id}')
+            print(f'English transcripts unavailable for the video "{video_title}"')
 
     return transcripts
