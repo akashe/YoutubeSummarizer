@@ -2,6 +2,7 @@ credentials.json
 token.json
 
 .idea/*
+test.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
