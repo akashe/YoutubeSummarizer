@@ -1,13 +1,9 @@
-import pdb
 import os
-import openai
 import streamlit as st
 from process_channels import process_channels
 import validators
-import contextlib
-from functools import wraps
-from io import StringIO
 import redirect as rd
+import asyncio
 
 #TODO: give app name which displays in the tab
 
@@ -75,8 +71,11 @@ with st.form("YoutubeSummary"):
             search_terms = None
 
         with rd.stdout(to=to_out, format="markdown"):
-            _ = process_channels(youtube_channels,
+            _ = asyncio.run(
+                process_channels(youtube_channels,
                                  last_n_weeks,
                                  search_terms,
                                  return_sources,
                                  model_name)
+            )
+

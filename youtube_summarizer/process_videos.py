@@ -1,5 +1,6 @@
 import pdb
 
+import asyncio
 import argparse
 from typing import List
 
@@ -8,13 +9,18 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
 
 from utils import get_adjusted_iso_date_time, get_transcript_from_xml, check_supported_models, get_transcripts
-from get_chain import get_summary_of_each_video, get_documents, get_summary_with_keywords
+from get_chain import get_summary_of_each_video, \
+    aget_summary_of_each_video,\
+    get_documents, \
+    get_summary_with_keywords, \
+    aget_summary_with_keywords
+
 
 import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-from prompts import get_per_document_with_keyword_prompt_template, \
+from openai_prompts import get_per_document_with_keyword_prompt_template, \
     get_combine_document_prompt_template, \
     get_per_document_prompt_template, \
     get_combine_document_with_source_prompt_template
@@ -57,7 +63,7 @@ def process_videos(
     else:
         print(f"Analyzing {len(video_ids)} video")
 
-    transcripts = get_transcripts(video_ids)
+    transcripts = get_transcripts(video_ids, video_titles)
 
     documents = get_documents(video_ids, video_titles, transcripts, model_name)
     try:
@@ -65,11 +71,14 @@ def process_videos(
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
-            result = get_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
+            result = asyncio.run(
+                aget_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
+            )
         else:
             per_document_template = get_per_document_prompt_template(model_name)
-            result = get_summary_of_each_video(documents, per_document_template, model_name)
-        #result = get_chain_for_summary(documents, search_terms)
+            result = asyncio.run(
+                aget_summary_of_each_video(documents, per_document_template, model_name)
+            )
     except Exception as e:
         print(e)
 
@@ -94,4 +103,5 @@ if __name__ == "__main__":
     assert check_supported_models(args.model_name), "Model not available in config"
 
     process_videos(args.youtube_channel_links, args.summary_of_n_weeks, args.search_terms, args.return_sources)
+
 
