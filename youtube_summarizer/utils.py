@@ -31,24 +31,6 @@ def check_supported_models(model_name: str) -> bool:
     return model_name.lower() in supported_models
 
 
-def get_model_max_len(model_name:str) -> int:
-    with open("model_config.json", "r") as f:
-        config = json.load(f)
-
-    model_max_len = config[model_name]["max_allowed_token_len"]
-    tokens_for_prompt = config["tokens_for_prompt_and_generation"]
-
-    return model_max_len - tokens_for_prompt
-
-
-def get_model_max_tokens(model_name:str) -> int:
-    with open("model_config.json", "r") as f:
-        config = json.load(f)
-
-    model_max_len = config[model_name]["max_allowed_token_len"]
-
-    return model_max_len
-
 def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[dict]]:
 
     transcripts = []

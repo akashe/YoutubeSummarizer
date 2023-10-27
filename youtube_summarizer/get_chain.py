@@ -1,4 +1,4 @@
-import pdb
+import json
 import time
 import sys
 from copy import deepcopy
@@ -12,15 +12,30 @@ from langchain.llms.base import create_base_retry_decorator
 from langchain.schema import Document
 from typing import List, Tuple, Any, Callable
 
-
-
-from utils import get_model_max_len, get_model_max_tokens
-
 import tiktoken
 import logging
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+def get_model_max_len(model_name:str) -> int:
+    with open("model_config.json", "r") as f:
+        config = json.load(f)
+
+    model_max_len = config[model_name]["max_allowed_token_len"]
+    tokens_for_prompt = config["tokens_for_prompt_and_generation"]
+
+    return model_max_len - tokens_for_prompt
+
+
+def get_model_max_tokens(model_name:str) -> int:
+    with open("model_config.json", "r") as f:
+        config = json.load(f)
+
+    model_max_len = config[model_name]["max_allowed_token_len"]
+
+    return model_max_len
 
 
 def get_time_encoded_transcripts(transcript: List[dict],
@@ -294,7 +309,8 @@ def get_summary_with_keywords(documents: List[Document],
                               keywords: List[str],
                               per_document_template: PromptTemplate,
                               combine_document_template: PromptTemplate,
-                              open_ai_model: str) -> str:
+                              open_ai_model: str,
+                              total_videos: int) -> str:
     """
     Method to return summary of documents with focus on specific keywords.
     This method uses langchain to query LLM.
@@ -345,14 +361,18 @@ def get_summary_with_keywords(documents: List[Document],
             print(f'Waiting to avoid token rate limits associated with GPT-4')
             time.sleep(47)
 
+    big_summary = ""
+    for source, summary in smaller_summaries:
+        big_summary += f"Source: {source}\n Summary: {summary}\n\n"
+
+    if total_videos == 1:
+        # If there is only a single video then we don't need to create a combined summary
+        return big_summary
+
     logger.info("Creating combined summary")
     print('\n')
     print("Creating combined summary")
     print('\n')
-
-    big_summary = ""
-    for source, summary in smaller_summaries:
-        big_summary += f"Source: {source}\n Summary: {summary}\n\n"
 
     llm_2 = ChatOpenAI(model_name=open_ai_model,
                        temperature=0.0,
@@ -381,7 +401,8 @@ async def aget_summary_with_keywords(documents: List[Document],
                                      keywords: List[str],
                                      per_document_template: dict,
                                      combine_document_template: dict,
-                                     open_ai_model: str) -> str:
+                                     open_ai_model: str,
+                                     total_videos: int) -> str:
 
     """
     Async method to generate summary around fixed keywords.
@@ -425,14 +446,18 @@ async def aget_summary_with_keywords(documents: List[Document],
             print(f'Waiting to avoid token rate limits associated with GPT-4')
             time.sleep(47)
 
+    big_summary = ""
+    for source, summary in smaller_summaries:
+        big_summary += f"Source: {source}\n Summary: {summary}\n\n"
+
+    if total_videos == 1:
+        # If there is only a single video then we don't need to create a combined summary
+        return big_summary
+
     logger.info("Creating combined summary")
     print('\n')
     print("Creating combined summary")
     print('\n')
-
-    big_summary = ""
-    for source, summary in smaller_summaries:
-        big_summary += f"Source: {source}\n Summary: {summary}\n\n"
 
     summaries = divide_big_summary_into_parts(big_summary, open_ai_model)
 

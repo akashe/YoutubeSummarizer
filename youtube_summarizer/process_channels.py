@@ -27,7 +27,7 @@ async def process_channels(
     summary_of_n_weeks: int = 1,
     search_terms: List[str] = None,
     get_source: bool = False,
-    model_name: str = "gpt-4"
+    model_name: str = "gpt-3.5-turbo-16k"
 ) -> str:
 
     latest_video_ids = []
@@ -69,14 +69,20 @@ async def process_channels(
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
-            result = await aget_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
+
+            result = await aget_summary_with_keywords(documents,
+                                                      search_terms,
+                                                      per_document_template,
+                                                      combine_document_template,
+                                                      model_name,
+                                                      len(latest_video_ids))
         else:
             per_document_template = get_per_document_prompt_template(model_name)
             result = await aget_summary_of_each_video(documents, per_document_template, model_name)
 
     except Exception as e:
-        #print(e)
         print("Something bad happened with the request. Please retry :)")
+        return "-1"
 
     return result
 
@@ -93,7 +99,7 @@ if __name__ == "__main__":
                              "a general summary will be created.")
     parser.add_argument('--return_sources', action='store_true', default=False,
                         help="To return sources of information in the final summary.")
-    parser.add_argument('--model_name', default='gpt-4',
+    parser.add_argument('--model_name', default='gpt-3.5-turbo-16k',
                         help="model to use for generating summaries.")
 
     args = parser.parse_args()

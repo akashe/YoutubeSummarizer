@@ -56,13 +56,19 @@ async def process_a_playlist(
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
-            result = await aget_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
+
+            result = await aget_summary_with_keywords(documents,
+                                                      search_terms,
+                                                      per_document_template,
+                                                      combine_document_template,
+                                                      model_name,
+                                                      len(video_ids))
         else:
             per_document_template = get_per_document_prompt_template(model_name)
             result = await aget_summary_of_each_video(documents, per_document_template, model_name)
     except Exception as e:
-        #print(e)
         print("Something bad happened with the request. Please retry :)")
+        return "-1"
 
     return result
 
