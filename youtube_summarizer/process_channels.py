@@ -6,7 +6,7 @@ import openai
 
 from youtube.get_information import YoutubeConnect
 
-from utils import get_adjusted_iso_date_time, check_supported_models, get_transcripts
+from utils import get_adjusted_iso_date_time, check_supported_models, get_transcripts, http_connection_decorator
 from get_chain import aget_summary_of_each_video, get_documents, aget_summary_with_keywords
 
 import logging
@@ -21,6 +21,7 @@ from openai_prompts import get_per_document_with_keyword_prompt_template, \
 
 #["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
 #["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
+@http_connection_decorator
 async def process_channels(
     youtube_channel_links: List[str] = ["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"],
     summary_of_n_weeks: int = 1,
@@ -28,9 +29,6 @@ async def process_channels(
     get_source: bool = False,
     model_name: str = "gpt-4"
 ) -> str:
-
-    from aiohttp import ClientSession
-    openai.aiosession.set(ClientSession())
 
     latest_video_ids = []
     youtube_connect = YoutubeConnect()
@@ -64,6 +62,8 @@ async def process_channels(
     transcripts = get_transcripts(latest_video_ids, video_titles)
 
     documents = get_documents(latest_video_ids, video_titles, transcripts, model_name)
+
+    result = ""
     try:
         if search_terms:
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
@@ -75,9 +75,8 @@ async def process_channels(
             result = await aget_summary_of_each_video(documents, per_document_template, model_name)
 
     except Exception as e:
-        print(e)
-
-    await openai.aiosession.get().close()
+        #print(e)
+        print("Something bad happened with the request. Please retry :)")
 
     return result
 

@@ -6,7 +6,7 @@ from typing import List
 from youtube.get_information import YoutubeConnect
 import openai
 
-from utils import check_supported_models, get_transcript_from_xml, get_transcripts
+from utils import check_supported_models, http_connection_decorator, get_transcripts
 from get_chain import aget_summary_of_each_video, get_documents, aget_summary_with_keywords
 
 import logging
@@ -19,16 +19,14 @@ from openai_prompts import get_per_document_with_keyword_prompt_template,\
     get_combine_document_with_source_prompt_template
 
 
-async def main(
+@http_connection_decorator
+async def process_a_playlist(
     youtube_playlist_name: str = "data",
     last_n_videos: int = 10,
     search_terms: List[str] = ["AGI", "history", "spirituality", "human pyschology", "new developments in science"],
     get_source: bool = False,
     model_name: str = "gpt-4"
 ) -> str:
-
-    from aiohttp import ClientSession
-    openai.aiosession.set(ClientSession())
 
     assert youtube_playlist_name.lower() != "watch later", "Watch later not accesible via YoutubeData API"
 
@@ -52,6 +50,7 @@ async def main(
 
     documents = get_documents(video_ids, video_titles, transcripts, model_name)
 
+    result = ""
     try:
         if search_terms:
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
@@ -62,9 +61,8 @@ async def main(
             per_document_template = get_per_document_prompt_template(model_name)
             result = await aget_summary_of_each_video(documents, per_document_template, model_name)
     except Exception as e:
-        print(e)
-
-    await openai.aiosession.get().close()
+        #print(e)
+        print("Something bad happened with the request. Please retry :)")
 
     return result
 
@@ -89,5 +87,5 @@ if __name__ == "__main__":
     assert check_supported_models(args.model_name), "Model not available in config"
 
     asyncio.run(
-        main(args.youtube_playlist_name, args.last_n_videos, args.search_terms, args.return_sources, args.model_name)
+        process_a_playlist(args.youtube_playlist_name, args.last_n_videos, args.search_terms, args.return_sources, args.model_name)
     )

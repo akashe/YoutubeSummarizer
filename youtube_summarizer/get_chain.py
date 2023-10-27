@@ -25,6 +25,20 @@ logging.basicConfig(level=logging.INFO)
 
 def get_time_encoded_transcripts(transcript: List[dict],
                                  model_name: str) -> Tuple[bool, float, float, str]:
+    """
+    Create subsets of transcripts based on the maximum token length of the model used.
+    If the model maximum token length is 5000 and total tokens in the transcript are
+    10,000. Then create 2 transcripts with each 5000 tokens with their respective
+    start and end timings.
+
+    :param transcript: transcript of a video
+    :param model_name: the model name selected by the user
+    :return: a tuple of (bool value highlighting where the transcript was split or not,
+            start timing of the split of the transcript,
+            end timing of the split of the transcript,
+            the transcript split)
+    """
+
     enc = tiktoken.encoding_for_model(model_name)
     model_max_token_len = get_model_max_len(model_name)
 
@@ -59,6 +73,17 @@ def get_documents(video_ids: List[str],
                   video_titles: List[str],
                   transcripts: List[List[dict]],
                   model_name: str) -> List[Document]:
+    """
+    Return a list of documents from transcripts with their video id, video title as metadata of the document
+
+    :param video_ids: List of video ids of the video
+    :param video_titles: List of names of the videos
+    :param transcripts: List of transcript of each video
+    :param model_name: model name selected by user for summarization
+    :return: List of documents created with transcript text and relevant metadata
+    """
+
+
     documents = []
 
     for video_id, video_title, transcript in zip(video_ids, video_titles, transcripts):
@@ -87,6 +112,17 @@ def get_documents(video_ids: List[str],
 
 
 def divide_big_summary_into_parts(summary: str, model_name: str) -> List[str]:
+    """
+    Function to divide a big summary into smaller parts based on the max token length supported
+    by the model.
+    While processing a lot of videos, the token length of the combination of all smaller summaries could
+    be more than the max token length supported by the model. So, we divide the combination into smaller
+    parts. This allows model to process the summaries
+
+    :param summary: combined summary created by joining multiple smaller sumamries
+    :param model_name: model name used for summarizartion
+    :return: list of smaller summaries
+    """
     enc = tiktoken.encoding_for_model(model_name)
     model_max_token_len = get_model_max_len(model_name)
 
@@ -107,7 +143,16 @@ def divide_big_summary_into_parts(summary: str, model_name: str) -> List[str]:
 def get_updated_prompts(original_prompt_dict: dict,
                         context: str,
                         summary_keywords: Any = None) -> dict:
+    """
+    Format the original prompt string with context and summary keywords.
+    The original prompts are normal string with placeholders for context and summary_keywords.
+    Format the string with actual values.
 
+    :param original_prompt_dict: prompt dict for the use case
+    :param context: the transcript or the combination of summaries from transcripts of the videos
+    :param summary_keywords: keywords to focus on while summarization if present
+    :return:
+    """
     prompt_dict = deepcopy(original_prompt_dict)
 
     if prompt_dict["summary_keywords"]:
@@ -120,8 +165,17 @@ def get_updated_prompts(original_prompt_dict: dict,
 
 
 def get_max_tokens(text: str, model_name:str) -> int:
-    # Return exact number of maximum tokens that the model can use for generation
-    # total size of input prompt and the size of transcripts can vary
+    """
+    Return exact number of maximum tokens that the model can use for generation
+    total size of input prompt and the size of transcripts can vary.
+
+    We substract and additional 20 token from the possible limits due to
+    some mismatch in values we get from tiktoken and acutal usage from Openai API.
+
+    :param text: text to be passed to the model
+    :param model_name: model name for summarization
+    :return: possible maximum tokens for generation
+    """
 
     model_max_tokens = get_model_max_tokens(model_name)
 
@@ -135,6 +189,13 @@ def _create_retry_decorator(
     max_tries: int,
     run_manager: Any = None,
 ) -> Callable[[Any], Any]:
+    """
+    Retry decorator from langchain lib that handles possible errors from OpenAI API and allows retries.
+
+    :param max_tries: max retries allowed at failure time
+    :param run_manager: run manager which contains callbacks that are passed to LLMs for generation. Not applicable here.
+    :return: a decorator that allows retries.
+    """
     import openai
 
     errors = [
@@ -152,7 +213,14 @@ def _create_retry_decorator(
 async def acompletion_with_retry(max_tries=6,
                                  run_manager=None,
                                  **kwargs: Any) -> str:
+    """
+    Function to apply retry decorator on async calls to OpenAI
 
+    :param max_tries: max retries allowed at failure time
+    :param run_manager: run manager which contains callbacks that are passed to LLMs for generation. Not applicable here.
+    :param kwargs: variables to be passed to async call function
+    :return: async call function with retry decorator.
+    """
     retry_decorator = _create_retry_decorator(max_tries, run_manager=run_manager)
 
     @retry_decorator
@@ -167,11 +235,22 @@ async def aget_response_from_llm(model_name: str,
                                  context: str,
                                  stream: bool = True,
                                  summary_keywords: Any = None) -> str:
+    """
+    Async call function for accessing OpenAI completion endpoints.
+
+    :param model_name: model to be used
+    :param prompt_dict: the prompt to be used for 'system' and 'user' roles
+    :param context: the transcripts of videos or combination of summaries of videos
+    :param stream: whether to stream the generated answer or not
+    :param summary_keywords: keywords to focus on while summarization if present
+    :return: returns the completion answer string from OpenAI
+    """
 
     prompt_dict = get_updated_prompts(prompt_dict, context, summary_keywords)
 
     max_tokens = get_max_tokens(prompt_dict["system"]+prompt_dict["user"], model_name)
 
+    # get async generator for chat completion
     response = await openai.ChatCompletion.acreate(
         model=model_name,
         messages=[
@@ -184,8 +263,13 @@ async def aget_response_from_llm(model_name: str,
     )
 
     if not stream:
+        # If stream is set to False, then the answer is returned in a single chunk.
         output = response['choices'][0]["message"]["content"]
     else:
+        # If stream is set to true then one has to iterate over each token individually.
+        # We have to flush the token stdout, that allows the tokens to be present in the UI while
+        # iterating over each token returned by OpenAI.
+
         collected_response = []
         async for chunk in response:
             try:
@@ -196,8 +280,9 @@ async def aget_response_from_llm(model_name: str,
                 sys.stdout.write(chunk_message)
                 sys.stdout.flush()
                 collected_response.append(chunk_message)
-            except:
-                pdb.set_trace()
+            except Exception as e:
+                #pdb.set_trace()
+                print(e)
                 continue
 
         output = "".join(collected_response)
@@ -210,6 +295,19 @@ def get_summary_with_keywords(documents: List[Document],
                               per_document_template: PromptTemplate,
                               combine_document_template: PromptTemplate,
                               open_ai_model: str) -> str:
+    """
+    Method to return summary of documents with focus on specific keywords.
+    This method uses langchain to query LLM.
+
+    :param documents: List of documents containing transcripts of videos along with video metadata
+    :param keywords: keywords to focus on for summarization
+    :param per_document_template: Prompt template to be used for each video
+    :param combine_document_template: Prompt template to be used for combined summary of videos.
+    :param open_ai_model: model to use for summarization.
+    :return: the output from llm
+    """
+
+    # to stream answer we use StreamingStdOutCallbackHandler which prints each new token to stdout
     llm = ChatOpenAI(model_name=open_ai_model,
                      temperature=0.0,
                      streaming=True,
@@ -226,6 +324,10 @@ def get_summary_with_keywords(documents: List[Document],
         print('\n')
 
         if d.metadata["did_split_happen"]:
+
+            # If transcript was too long for the model to process in one time,
+            # process subset of the transcript and show the start and end time for the subset
+
             print(f'Summary of video "{d.metadata["title"]}"'
                   f' from {d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
                   f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
@@ -259,11 +361,10 @@ def get_summary_with_keywords(documents: List[Document],
 
     combined_document_chain = LLMChain(llm=llm_2, prompt=combine_document_template)
 
-    # return combined_document_chain.run(doc_summaries=big_summary, summary_keywords=summary_keywords)
-
     summaries = divide_big_summary_into_parts(big_summary, open_ai_model)
 
     while len(summaries) > 1:
+        # Process a big summary in sub parts till the combined summary is small enough
         smaller_chunks = ""
         for smaller_summary in summaries:
             smaller_chunks += combined_document_chain.run(doc_summaries=smaller_summary,
@@ -281,6 +382,20 @@ async def aget_summary_with_keywords(documents: List[Document],
                                      per_document_template: dict,
                                      combine_document_template: dict,
                                      open_ai_model: str) -> str:
+
+    """
+    Async method to generate summary around fixed keywords.
+    This method doesn't use langchain but communicates with OpenAI directly
+
+    :param documents: List of documents containing transcripts of videos along with video metadata
+    :param keywords: keywords to focus while summarization
+    :param per_document_template: prompt dict with system and user prompts to be used while processing a single video
+    :param combine_document_template: prompt dict with system and user prompts to be used while processing combined summary
+            from different videos
+    :param open_ai_model: model to be used for summarization
+    :return: the result summary
+    """
+
     summary_keywords = ", ".join(keywords)
 
     smaller_summaries = []
@@ -342,6 +457,17 @@ async def aget_summary_with_keywords(documents: List[Document],
 def get_summary_of_each_video(documents: List[Document],
                               per_document_template: PromptTemplate,
                               open_ai_model: str) -> str:
+    """
+    Return a summary of each video separately. This function returns a general summary
+    and does not create a summary around specific keywords.
+    This function uses langchain backend.
+
+    :param documents: List of documents containing transcripts of videos along with video metadata
+    :param per_document_template: Prompt template to be used for each video
+    :param open_ai_model: model to be used for summarization
+    :return: result summary
+    """
+
     llm = ChatOpenAI(model_name=open_ai_model,
                      temperature=0.0,
                      streaming=True,
@@ -379,6 +505,16 @@ def get_summary_of_each_video(documents: List[Document],
 async def aget_summary_of_each_video(documents: List[Document],
                                      per_document_template: dict,
                                      open_ai_model: str) -> str:
+    """
+    Async method to return a summary of each video separately. This function returns a
+    general summary and does not create a summary around specific keywords.
+    This function directly hits OpenAI API and doesnt use langcahin backend.
+
+    :param documents: List of documents containing transcripts of videos along with video metadata
+    :param per_document_template: dict with "system" and "user" prompts to generate summary for each video
+    :param open_ai_model: model to use for summarization
+    :return: the result summary
+    """
 
     summary = ""
     for i, d in enumerate(documents):

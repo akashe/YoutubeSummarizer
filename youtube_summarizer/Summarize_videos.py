@@ -29,7 +29,8 @@ st.markdown(
 with st.form("Process videos"):
     try:
         video_links = st.text_input("Enter list of youtube videos, separated by comma",
-                       placeholder="https://www.youtube.com/watch?v=q8CHXefn7B4, https://www.youtube.com/watch?v=MVYrJJNdrEg")
+                       placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
+                                   "https://www.youtube.com/watch?v=WkBw6BCFVZ0")
 
         video_links = video_links.strip().split(",")
         video_links = [video.strip() for video in video_links if video != ""]
@@ -72,6 +73,12 @@ with st.form("Process videos"):
             search_terms = None
 
         with rd.stdout(to=to_out, format="markdown"):
+
+            if len(video_links) == 0:
+                print("Generating summaries using default options")
+                video_links = ["https://www.youtube.com/watch?v=dBH3nMNKtaQ",
+                               "https://www.youtube.com/watch?v=WkBw6BCFVZ0"]
+
             _ = asyncio.run(
                 process_videos(video_links,
                                search_terms,

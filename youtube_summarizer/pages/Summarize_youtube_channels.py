@@ -71,6 +71,15 @@ with st.form("YoutubeSummary"):
             search_terms = None
 
         with rd.stdout(to=to_out, format="markdown"):
+
+            to_out.empty()
+
+            if len(youtube_channels) == 0:
+                print("Generating summaries using default options")
+                youtube_channels = ["https://www.youtube.com/c/lexfridman",
+                                    "https://www.youtube.com/@hubermanlab"]
+                last_n_weeks = 3
+
             _ = asyncio.run(
                 process_channels(youtube_channels,
                                  last_n_weeks,
