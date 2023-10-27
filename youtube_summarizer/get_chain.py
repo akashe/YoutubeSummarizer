@@ -1,16 +1,20 @@
 import pdb
 import time
 import sys
+from copy import deepcopy
 
 import openai
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
+from langchain.llms.base import create_base_retry_decorator
 from langchain.schema import Document
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Callable
 
-from utils import get_model_max_len
+
+
+from utils import get_model_max_len, get_model_max_tokens
 
 import tiktoken
 import logging
@@ -100,9 +104,12 @@ def divide_big_summary_into_parts(summary: str, model_name: str) -> List[str]:
     return smaller_summaries
 
 
-def get_updated_prompts(prompt_dict: dict,
+def get_updated_prompts(original_prompt_dict: dict,
                         context: str,
                         summary_keywords: Any = None) -> dict:
+
+    prompt_dict = deepcopy(original_prompt_dict)
+
     if prompt_dict["summary_keywords"]:
         assert summary_keywords is not None
         prompt_dict["system"] = prompt_dict["system"].format(summary_keywords=summary_keywords)
@@ -112,17 +119,58 @@ def get_updated_prompts(prompt_dict: dict,
     return prompt_dict
 
 
+def get_max_tokens(text: str, model_name:str) -> int:
+    # Return exact number of maximum tokens that the model can use for generation
+    # total size of input prompt and the size of transcripts can vary
+
+    model_max_tokens = get_model_max_tokens(model_name)
+
+    enc = tiktoken.encoding_for_model(model_name)
+    enc_text = enc.encode(text)
+
+    return model_max_tokens - len(enc_text) - 20
+
+
+def _create_retry_decorator(
+    max_tries: int,
+    run_manager: Any = None,
+) -> Callable[[Any], Any]:
+    import openai
+
+    errors = [
+        openai.error.Timeout,
+        openai.error.APIError,
+        openai.error.APIConnectionError,
+        openai.error.RateLimitError,
+        openai.error.ServiceUnavailableError,
+    ]
+    return create_base_retry_decorator(
+        error_types=errors, max_retries=max_tries, run_manager=run_manager
+    )
+
+
+async def acompletion_with_retry(max_tries=6,
+                                 run_manager=None,
+                                 **kwargs: Any) -> str:
+
+    retry_decorator = _create_retry_decorator(max_tries, run_manager=run_manager)
+
+    @retry_decorator
+    async def _completion_with_retry(**kwargs: Any) -> Any:
+        return await aget_response_from_llm(**kwargs)
+
+    return await _completion_with_retry(**kwargs)
+
+
 async def aget_response_from_llm(model_name: str,
                                  prompt_dict: dict,
                                  context: str,
                                  stream: bool = True,
                                  summary_keywords: Any = None) -> str:
-    from aiohttp import ClientSession
-    openai.aiosession.set(ClientSession())
 
     prompt_dict = get_updated_prompts(prompt_dict, context, summary_keywords)
 
-    pdb.set_trace()
+    max_tokens = get_max_tokens(prompt_dict["system"]+prompt_dict["user"], model_name)
 
     response = await openai.ChatCompletion.acreate(
         model=model_name,
@@ -131,6 +179,7 @@ async def aget_response_from_llm(model_name: str,
             {'role': 'user', 'content': prompt_dict["user"]}
         ],
         temperature=0,
+        max_tokens=max_tokens,
         stream=stream
     )
 
@@ -141,18 +190,17 @@ async def aget_response_from_llm(model_name: str,
         async for chunk in response:
             try:
                 finish = chunk['choices'][0]["finish_reason"]
-                if not finish == "stop":
-                    chunk_message = chunk['choices'][0]['delta']["content"]  # extract the message
-                    sys.stdout.write(chunk_message)
-                    sys.stdout.flush()
-                    collected_response.append(chunk_message)
+                if finish == "stop" or finish == "length":
+                    break
+                chunk_message = chunk['choices'][0]['delta']["content"]  # extract the message
+                sys.stdout.write(chunk_message)
+                sys.stdout.flush()
+                collected_response.append(chunk_message)
             except:
                 pdb.set_trace()
                 continue
 
         output = "".join(collected_response)
-
-    await openai.aiosession.get().close()
 
     return output
 
@@ -249,7 +297,7 @@ async def aget_summary_with_keywords(documents: List[Document],
             print(f'Summary of video "{d.metadata["title"]}"\n')
             source_doc = d.metadata["source"]
 
-        d_summary = await aget_response_from_llm(model_name=open_ai_model,
+        d_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=per_document_template,
                                                  context=d.page_content,
                                                  summary_keywords=summary_keywords)
@@ -276,7 +324,7 @@ async def aget_summary_with_keywords(documents: List[Document],
     while len(summaries) > 1:
         smaller_chunks = ""
         for smaller_summary in summaries:
-            smaller_chunks += await aget_response_from_llm(model_name=open_ai_model,
+            smaller_chunks += await acompletion_with_retry(model_name=open_ai_model,
                                                            prompt_dict=combine_document_template,
                                                            context=smaller_summary,
                                                            stream=False,
@@ -284,7 +332,7 @@ async def aget_summary_with_keywords(documents: List[Document],
 
         summaries = divide_big_summary_into_parts(smaller_chunks, open_ai_model)
 
-    final_summary = await aget_response_from_llm(model_name=open_ai_model,
+    final_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=combine_document_template,
                                                  context=summaries[0],
                                                  summary_keywords=summary_keywords)
@@ -343,7 +391,7 @@ async def aget_summary_of_each_video(documents: List[Document],
         else:
             print(f'Summary of video "{d.metadata["title"]}"\n')
 
-        d_summary = await aget_response_from_llm(model_name=open_ai_model,
+        d_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=per_document_template,
                                                  context=d.page_content)
 

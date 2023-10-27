@@ -2,6 +2,7 @@ import asyncio
 
 import argparse
 from typing import List
+import openai
 
 from youtube.get_information import YoutubeConnect
 
@@ -27,6 +28,9 @@ async def process_channels(
     get_source: bool = False,
     model_name: str = "gpt-4"
 ) -> str:
+
+    from aiohttp import ClientSession
+    openai.aiosession.set(ClientSession())
 
     latest_video_ids = []
     youtube_connect = YoutubeConnect()
@@ -72,6 +76,8 @@ async def process_channels(
 
     except Exception as e:
         print(e)
+
+    await openai.aiosession.get().close()
 
     return result
 
