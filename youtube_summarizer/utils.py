@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import json
 from typing import List, Tuple
+import openai
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
@@ -61,3 +62,19 @@ def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[
             print(f'English transcripts unavailable for the video "{video_title}"')
 
     return transcripts
+
+
+def http_connection_decorator(func):
+    async def inner(*args, **kwargs):
+        try:
+            from aiohttp import ClientSession
+            openai.aiosession.set(ClientSession())
+
+            return await func(*args, **kwargs)
+
+        except Exception as e:
+            print("Something bad happened with the request. Please retry :)")
+        finally:
+            await openai.aiosession.get().close()
+
+    return inner
