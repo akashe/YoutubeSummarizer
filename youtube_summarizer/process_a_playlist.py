@@ -4,8 +4,7 @@ import argparse
 from typing import List
 
 from youtube.get_information import YoutubeConnect
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
+import openai
 
 from utils import check_supported_models, get_transcript_from_xml, get_transcripts
 from get_chain import aget_summary_of_each_video, get_documents, aget_summary_with_keywords
@@ -27,6 +26,9 @@ async def main(
     get_source: bool = False,
     model_name: str = "gpt-4"
 ) -> str:
+
+    from aiohttp import ClientSession
+    openai.aiosession.set(ClientSession())
 
     assert youtube_playlist_name.lower() != "watch later", "Watch later not accesible via YoutubeData API"
 
@@ -61,7 +63,9 @@ async def main(
             result = await aget_summary_of_each_video(documents, per_document_template, model_name)
     except Exception as e:
         print(e)
-    # TODO: fix what to do with results both here and channels file
+
+    await openai.aiosession.get().close()
+
     return result
 
 

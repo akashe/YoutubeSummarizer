@@ -11,5 +11,5 @@
   "gpt-3.5-turbo": {
     "max_allowed_token_len": 4097
   },
-  "tokens_for_prompt" : 120
+  "tokens_for_prompt_and_generation" : 376
 }

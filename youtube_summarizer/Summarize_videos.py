@@ -72,7 +72,9 @@ with st.form("Process videos"):
             search_terms = None
 
         with rd.stdout(to=to_out, format="markdown"):
-            _ = process_videos(video_links,
+            _ = asyncio.run(
+                process_videos(video_links,
                                search_terms,
                                return_sources,
                                model_name)
+            )
