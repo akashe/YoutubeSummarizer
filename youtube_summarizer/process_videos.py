@@ -35,19 +35,18 @@ async def process_videos(
     model_name: str = "gpt-3.5-turbo-16k"
 ) -> str:
 
-    #from aiohttp import ClientSession
-    #openai.aiosession.set(ClientSession())
-
     youtube_connect = YoutubeConnect()
 
     # TO do check each link for correctness
+    #"https://m.youtube.com/watch?si=ZgwnRQGp_DeztHdC&v=m8LnEp-4f2Y&feature=youtu.be"
+    #"https://youtu.be/m8LnEp-4f2Y?si=ZgwnRQGp_DeztHdC"
     try:
         video_ids = []
         for link in youtube_video_links:
-            if "youtu.be" in link:
-                video_id = link.split("/")[-1].split("?")[0]
-            elif "m.youtube" in link:
+            if "m.youtube" in link:
                 video_id = link.split("&v=")[-1].split("&")[0]
+            elif "youtu.be" in link:
+                video_id = link.split("/")[-1].split("?")[0]
             else:
                 video_id = link.split("?v=")[1]
             video_ids.append(video_id)
@@ -76,16 +75,19 @@ async def process_videos(
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
-            result = await aget_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
+
+            result = await aget_summary_with_keywords(documents, search_terms,
+                                                      per_document_template,
+                                                      combine_document_template,
+                                                      model_name,
+                                                      len(video_ids))
 
         else:
             per_document_template = get_per_document_prompt_template(model_name)
             result = await aget_summary_of_each_video(documents, per_document_template, model_name)
     except Exception as e:
-        #print(e)
         print("Something bad happened with the request. Please retry :)")
-
-    #await openai.aiosession.get().close()
+        return "-1"
 
     return result
 
@@ -93,22 +95,23 @@ async def process_videos(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('youtube_video_links', nargs='+', metavar='y',
+    parser.add_argument('--youtube_video_links', nargs='+', metavar='y',
                         help='a list youtube channel links that you want to process')
     parser.add_argument('-s', '--search_terms', type=str, nargs='*',
                         help="design the summary around your topics of interest. If not given,"
                              "a general summary will be created.")
     parser.add_argument('--return_sources', action='store_true', default=False,
                         help="To return sources of information in the final summary.")
-    parser.add_argument('--model_name', default='gpt-4',
+    parser.add_argument('--model_name', default='gpt-3.5-turbo-16k',
                         help="model to use for generating summaries.")
 
     args = parser.parse_args()
+    print(args)
 
     assert check_supported_models(args.model_name), "Model not available in config"
 
     asyncio.run(
-        process_videos(args.youtube_channel_links, args.summary_of_n_weeks, args.search_terms, args.return_sources)
+        process_videos(args.youtube_video_links, args.search_terms, args.return_sources, args.model_name)
     )
 
 
