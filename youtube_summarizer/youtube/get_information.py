@@ -29,7 +29,6 @@ from .parsers import get_channel_id_from_list_username_response, \
 
 
 class YoutubeConnect:
-
     """
     Class to connect and get information to YouTube Data API.
     The class won't work without a credentials.json that contains the:
@@ -49,9 +48,14 @@ class YoutubeConnect:
         Authenticate credentials and create a client for YouTube Data API.
         """
 
-        if not os.path.exists(self.client_secrets_file) and "client_id" in st.secrets:
+        streamlit_secret_file_present = os.path.exists(os.path.join(".streamlit/", "secrets.toml")) or os.path.exists(
+            os.path.join("/.streamlit/", "secrets.toml"))
+
+        if not os.path.exists(self.client_secrets_file) and \
+                streamlit_secret_file_present and \
+                "client_id" in st.secrets:
             data = {
-                "web":{
+                "web": {
                     "client_id": st.secrets["client_id"],
                     "project_id": st.secrets["project_id"],
                     "auth_uri": st.secrets["auth_uri"],
@@ -62,13 +66,14 @@ class YoutubeConnect:
                 }
             }
 
-            with open(self.client_secrets_file,"w") as f:
+            with open(self.client_secrets_file, "w") as f:
                 json.dump(data, f)
         else:
-            assert os.path.exists(self.client_secrets_file), "Download credentials.json from your Google Workspace Project"
+            assert os.path.exists(
+                self.client_secrets_file), "Download credentials.json from your Google Workspace Project"
 
         creds = None
-        if "token" in st.secrets:
+        if streamlit_secret_file_present and "token" in st.secrets:
             mapping = {
                 "token": st.secrets["token"],
                 "refresh_token": st.secrets["refresh_token"],
@@ -177,7 +182,7 @@ class YoutubeConnect:
 
     def get_last_n_videos_from_playlist(self, playlist_id, n) -> List[str]:
 
-        assert n<=50, "Cant get more than 50 videos"
+        assert n <= 50, "Cant get more than 50 videos"
 
         try:
             request = self.youtube.playlistItems().list(
