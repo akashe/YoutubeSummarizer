@@ -555,19 +555,22 @@ async def aget_summary_of_each_video(documents: List[Document],
         else:
             print(f'Summary of video "{d.metadata["title"]}"\n')
 
-        d_summary = await acompletion_with_retry(model_name=open_ai_model,
-                                                 prompt_dict=per_document_template,
-                                                 context=d.page_content)
+        try:
+            d_summary = await acompletion_with_retry(model_name=open_ai_model,
+                                                     prompt_dict=per_document_template,
+                                                     context=d.page_content)
 
-        if 'gpt-4' in open_ai_model:
-            logger.info(f'\nWaiting\n')
-            print('\n')
-            print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(47)
-        summary += d_summary
-        summary += f"\n\nSource: https://www.youtube.com/watch?v={d.metadata['source']}"
-        if d.metadata["did_split_happen"]:
-            summary += f"&t={d.metadata['video_start']}s"
-        summary += "\n"
+            if 'gpt-4' in open_ai_model:
+                logger.info(f'\nWaiting\n')
+                print('\n')
+                print(f'Waiting to avoid token rate limits associated with GPT-4')
+                time.sleep(47)
+            summary += d_summary
+            summary += f"\n\nSource: https://www.youtube.com/watch?v={d.metadata['source']}"
+            if d.metadata["did_split_happen"]:
+                summary += f"&t={d.metadata['video_start']}s"
+            summary += "\n"
+        except Exception as e:
+            logger.info(e)
 
     return summary
