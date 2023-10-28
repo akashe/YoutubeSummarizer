@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import json
 # Sample Python code for youtube.captions.download
 # NOTE: This sample code downloads a file and can't be executed via this
 #       interface. To data this sample, you must run it locally using your
@@ -8,9 +8,9 @@
 # See instructions for running these code samples locally:
 # https://developers.google.com/explorer-help/code-samples#python
 
-import io
 import os
 import re
+import streamlit as st
 
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
@@ -49,11 +49,34 @@ class YoutubeConnect:
         Authenticate credentials and create a client for YouTube Data API.
         """
 
-        assert os.path.exists(self.client_secrets_file), "Download credentials.json from your Google Workspace Project"
+        if not os.path.exists(self.client_secrets_file):
+            data = {
+                "web":{
+                    "client_id": st.secrets["client_id"],
+                    "project_id": st.secrets["project_id"],
+                    "auth_uri": st.secrets["auth_uri"],
+                    "token_uri": st.secrets["token_uri"],
+                    "auth_provider_x509_cert_url": st.secrets["auth_provider_x509_cert_url"],
+                    "client_secret": st.secrets["client_secret"],
+                    "token": st.secrets["redirect_uris"],
+                }
+            }
+
+            with open(self.client_secrets_file,"w") as f:
+                json.dump(data, f)
 
         creds = None
-        if os.path.exists('token.json'):
-            creds = Credentials.from_authorized_user_file('token.json', self.scopes)
+        if "token" in st.secrets:
+            mapping = {
+                "token": st.secrets["token"],
+                "refresh_token": st.secrets["refresh_token"],
+                "token_uri": st.secrets["token_uri"],
+                "client_id": st.secrets["client_id"],
+                "client_secret": st.secrets["client_secret"],
+                "scopes": st.secrets["scopes"],
+                "expiry": st.secrets["expiry"],
+            }
+            creds = Credentials.from_authorized_user_info(mapping, self.scopes)
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
