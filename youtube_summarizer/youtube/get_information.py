@@ -49,7 +49,7 @@ class YoutubeConnect:
         Authenticate credentials and create a client for YouTube Data API.
         """
 
-        if not os.path.exists(self.client_secrets_file):
+        if not os.path.exists(self.client_secrets_file) and "client_id" in st.secrets:
             data = {
                 "web":{
                     "client_id": st.secrets["client_id"],
@@ -64,6 +64,8 @@ class YoutubeConnect:
 
             with open(self.client_secrets_file,"w") as f:
                 json.dump(data, f)
+        else:
+            assert os.path.exists(self.client_secrets_file), "Download credentials.json from your Google Workspace Project"
 
         creds = None
         if "token" in st.secrets:
@@ -77,6 +79,9 @@ class YoutubeConnect:
                 "expiry": st.secrets["expiry"],
             }
             creds = Credentials.from_authorized_user_info(mapping, self.scopes)
+        elif os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', self.scopes)
+
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
