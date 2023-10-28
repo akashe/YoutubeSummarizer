@@ -3,6 +3,7 @@ import streamlit as st
 import validators
 import redirect as rd
 import asyncio
+import openai
 
 from process_videos import process_videos
 
@@ -15,7 +16,7 @@ with st.sidebar:
 
     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-    os.environ["OPENAI_API_KEY"] = openai_api_key
+    openai.api_key = openai_api_key
 
 st.title("InfoScribe: Your Personal Video News Reporter")
 
