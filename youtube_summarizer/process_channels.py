@@ -1,18 +1,19 @@
-import pdb
+import asyncio
 
 import argparse
 from typing import List
+import openai
 
 from youtube.get_information import YoutubeConnect
 
-from utils import get_adjusted_iso_date_time, get_transcript_from_xml, check_supported_models, get_transcripts
-from get_chain import get_summary_of_each_video, get_documents, get_summary_with_keywords
+from utils import get_adjusted_iso_date_time, check_supported_models, get_transcripts, http_connection_decorator
+from get_chain import aget_summary_of_each_video, get_documents, aget_summary_with_keywords
 
 import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-from prompts import get_per_document_with_keyword_prompt_template, \
+from openai_prompts import get_per_document_with_keyword_prompt_template, \
     get_combine_document_prompt_template, \
     get_per_document_prompt_template, \
     get_combine_document_with_source_prompt_template
@@ -20,12 +21,13 @@ from prompts import get_per_document_with_keyword_prompt_template, \
 
 #["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
 #["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
-def process_channels(
+@http_connection_decorator
+async def process_channels(
     youtube_channel_links: List[str] = ["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"],
     summary_of_n_weeks: int = 1,
     search_terms: List[str] = None,
     get_source: bool = False,
-    model_name: str = "gpt-4"
+    model_name: str = "gpt-3.5-turbo-16k"
 ) -> str:
 
     latest_video_ids = []
@@ -57,21 +59,30 @@ def process_channels(
 
     assert len(video_titles) == len(latest_video_ids)
 
-    transcripts = get_transcripts(latest_video_ids)
+    transcripts = get_transcripts(latest_video_ids, video_titles)
 
     documents = get_documents(latest_video_ids, video_titles, transcripts, model_name)
+
+    result = ""
     try:
         if search_terms:
             per_document_template = get_per_document_with_keyword_prompt_template(model_name)
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
-            result = get_summary_with_keywords(documents, search_terms, per_document_template, combine_document_template, model_name)
+
+            result = await aget_summary_with_keywords(documents,
+                                                      search_terms,
+                                                      per_document_template,
+                                                      combine_document_template,
+                                                      model_name,
+                                                      len(latest_video_ids))
         else:
             per_document_template = get_per_document_prompt_template(model_name)
-            result = get_summary_of_each_video(documents, per_document_template, model_name)
-        #result = get_chain_for_summary(documents, search_terms)
+            result = await aget_summary_of_each_video(documents, per_document_template, model_name)
+
     except Exception as e:
-        print(e)
+        print("Something bad happened with the request. Please retry :)")
+        return "-1"
 
     return result
 
@@ -88,12 +99,14 @@ if __name__ == "__main__":
                              "a general summary will be created.")
     parser.add_argument('--return_sources', action='store_true', default=False,
                         help="To return sources of information in the final summary.")
-    parser.add_argument('--model_name', default='gpt-4',
+    parser.add_argument('--model_name', default='gpt-3.5-turbo-16k',
                         help="model to use for generating summaries.")
 
     args = parser.parse_args()
 
     assert check_supported_models(args.model_name), "Model not available in config"
 
-    process_channels(args.youtube_channel_links, args.summary_of_n_weeks, args.search_terms, args.return_sources)
+    asyncio.run(
+        process_channels(args.youtube_channel_links, args.summary_of_n_weeks, args.search_terms, args.return_sources)
+    )
 

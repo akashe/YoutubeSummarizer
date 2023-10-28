@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import json
 from typing import List, Tuple
+import openai
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
@@ -30,26 +31,32 @@ def check_supported_models(model_name: str) -> bool:
     return model_name.lower() in supported_models
 
 
-def get_model_max_len(model_name:str) -> int:
-    with open("model_config.json", "r") as f:
-        config = json.load(f)
-
-    model_max_len = config[model_name]["max_allowed_token_len"]
-    tokens_for_prompt = config["tokens_for_prompt"]
-
-    return model_max_len - tokens_for_prompt
-
-
-def get_transcripts(video_ids: List[str]) -> List[List[dict]]:
+def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[dict]]:
 
     transcripts = []
-    for video_id in video_ids:
+    for video_id, video_title in zip(video_ids, video_titles):
         try:
             json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
             transcripts.append(json_transcript)
         except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound):
-            logger.info(f'Subtitles unavailable for the video https://www.youtube.com/watch?v={video_id}')
+            logger.info(f'Subtitles unavailable for the video "{video_title}"')
             print("\n")
-            print(f'English transcripts unavailable for the video https://www.youtube.com/watch?v={video_id}')
+            print(f'English transcripts unavailable for the video "{video_title}"')
 
     return transcripts
+
+
+def http_connection_decorator(func):
+    async def inner(*args, **kwargs):
+        try:
+            from aiohttp import ClientSession
+            openai.aiosession.set(ClientSession())
+
+            return await func(*args, **kwargs)
+
+        except Exception as e:
+            print("Something bad happened with the request. Please retry :)")
+        finally:
+            await openai.aiosession.get().close()
+
+    return inner

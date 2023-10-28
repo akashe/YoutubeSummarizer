@@ -11,7 +11,7 @@
 
 #print(get_channel_id("lexfridman"))
 
-print(get_latest_videos("UCSHZKyawb77ixDdsGog4iWA", "2023-09-01T00:00:00.00Z", 50))
+#print(get_latest_videos("UCSHZKyawb77ixDdsGog4iWA", "2023-09-01T00:00:00.00Z", 50))
 
 '''
 {

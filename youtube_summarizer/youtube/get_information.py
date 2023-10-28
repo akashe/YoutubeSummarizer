@@ -30,9 +30,14 @@ from .parsers import get_channel_id_from_list_username_response, \
 
 class YoutubeConnect:
 
-    '''
-    Class to connect and get information to Youtube Data API
-    '''
+    """
+    Class to connect and get information to YouTube Data API.
+    The class won't work without a credentials.json that contains the:
+        1. client_id and secret of your Google Workspace project
+        2. project_id: Name of the project in your workspace
+
+    Refer to README file for steps to get credentials.json
+    """
 
     scopes: List[str] = ["https://www.googleapis.com/auth/youtube.readonly"]
     api_service_name: str = "youtube"
@@ -40,6 +45,11 @@ class YoutubeConnect:
     client_secrets_file: str = "credentials.json"
 
     def __init__(self):
+        """
+        Authenticate credentials and create a client for YouTube Data API.
+        """
+
+        assert os.path.exists(self.client_secrets_file), "Download credentials.json from your Google Workspace Project"
 
         creds = None
         if os.path.exists('token.json'):
