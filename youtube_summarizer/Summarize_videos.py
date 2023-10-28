@@ -30,7 +30,7 @@ with st.form("Process videos"):
     try:
         video_links = st.text_input("Enter list of youtube videos, separated by comma",
                        placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
-                                   "https://www.youtube.com/watch?v=WkBw6BCFVZ0")
+                                   "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2")
 
         video_links = video_links.strip().split(",")
         video_links = [video.strip() for video in video_links if video != ""]
@@ -77,7 +77,7 @@ with st.form("Process videos"):
             if len(video_links) == 0:
                 print("Generating summaries using default options")
                 video_links = ["https://www.youtube.com/watch?v=dBH3nMNKtaQ",
-                               "https://www.youtube.com/watch?v=WkBw6BCFVZ0"]
+                               "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2"]
 
             _ = asyncio.run(
                 process_videos(video_links,
