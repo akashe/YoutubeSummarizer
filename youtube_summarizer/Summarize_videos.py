@@ -7,7 +7,35 @@ import openai
 
 from process_videos import process_videos
 
+def ui_spacer(n=2, line=False, next_n=0):
+    for _ in range(n):
+        st.write('')
+    if line:
+        st.tabs([' '])
+    for _ in range(next_n):
+        st.write('')
+
+
 with st.sidebar:
+    ui_spacer(27)
+    st.markdown(f"""
+    ## YouTube Insight
+    """)
+    st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
+    #ui_spacer(1)
+    st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
+
+st.header("YouTube Insight: Summarizing Media For You")
+
+st.markdown(
+    ""
+    "Welcome to YouTube Insight! Extract key information from any YouTube video swiftly and efficiently. "
+    "Simply paste the URL, plug in your search terms, and get either a general or "
+    "specific summary. Handle multiple videos simultaneously and save time with YouTube Insight!"
+    ""
+    )
+
+with st.expander("Settings"):
     model_name = st.selectbox(
         'Which LLM you prefer to use?',
         ('GPT-3.5-turbo-16k: Cost effective', 'GPT-4: Precise but costly'))
@@ -18,16 +46,7 @@ with st.sidebar:
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
     openai.api_key = openai_api_key
 
-st.title("InfoScribe: Your Personal Video News Reporter")
-
-st.markdown(
-    "Welcome to InfoScribe, your go-to web app for staying informed and up-to-date with the latest videos from your favorite YouTube videos. "
-    "In today's fast-paced digital world, it can be challenging to keep track of the wealth of information available online. That's where InfoScribe comes to your rescue!")
-st.markdown(
-    "Are you tired of spending hours sifting through YouTube videos trying to find the information that matters most to you? Do you want a personalized news reporter"
-    " that highlights the crucial details from the videos you care about? Look no further. InfoScribe is here to simplify your information consumption process and provide you with a tailored news experience like never before.")
-
-with st.form("Process videos"):
+with st.form("Analysis"):
     try:
         video_links = st.text_input("Enter list of youtube videos, separated by comma",
                        placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
@@ -50,7 +69,8 @@ with st.form("Process videos"):
 
     try:
         search_terms = st.text_input("Enter topics you want summary for, separated by comma",
-                                     placeholder="nutrition, OpenAI, Israel")
+                                     placeholder="nutrition, OpenAI, Israel",
+                                     help="Try using GPT-4 for more than 1 search term")
 
         if len(search_terms) == 0:
             raise Exception
@@ -64,7 +84,7 @@ with st.form("Process videos"):
     to_out = st.empty()
 
     if not openai_api_key:
-        st.info("Please add your OpenAI key in the sidebar to continue.")
+        st.info("Please add your OpenAI key in the Settings to continue.")
     elif submitted:
 
         if not search_terms == "":
