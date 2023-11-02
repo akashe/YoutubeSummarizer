@@ -54,16 +54,19 @@ async def process_videos(
         print("Enter valid urls")
         return "-1"
 
-    video_titles = []
-    for video_id in video_ids:
-        video_titles.append(youtube_connect.get_video_title(video_id))
-
     logger.info(f"Analyzing {len(video_ids)} videos")
     print("\n")
     if len(video_ids) > 1:
         print(f"Analyzing {len(video_ids)} videos")
     else:
         print(f"Analyzing {len(video_ids)} video")
+
+    print("\n")
+    video_titles = []
+    for id_, video_id in enumerate(video_ids):
+        video_title = youtube_connect.get_video_title(video_id)
+        video_titles.append(video_title)
+        print(f"{id_ + 1}. [{video_title}](https://www.youtube.com/watch?v={video_id})")
 
     transcripts = get_transcripts(video_ids, video_titles)
 

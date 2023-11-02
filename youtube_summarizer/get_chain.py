@@ -184,8 +184,8 @@ def get_max_tokens(text: str, model_name:str) -> int:
     Return exact number of maximum tokens that the model can use for generation
     total size of input prompt and the size of transcripts can vary.
 
-    We substract and additional 20 token from the possible limits due to
-    some mismatch in values we get from tiktoken and acutal usage from Openai API.
+    We subtract and additional 20 token from the possible limits due to
+    some mismatch in values we get from tiktoken and actual usage from Openai API.
 
     :param text: text to be passed to the model
     :param model_name: model name for summarization
@@ -197,7 +197,7 @@ def get_max_tokens(text: str, model_name:str) -> int:
     enc = tiktoken.encoding_for_model(model_name)
     enc_text = enc.encode(text)
 
-    return model_max_tokens - len(enc_text) - 20
+    return min(model_max_tokens - len(enc_text) - 20, 512)
 
 
 def _create_retry_decorator(
@@ -344,22 +344,22 @@ def get_summary_with_keywords(documents: List[Document],
             # If transcript was too long for the model to process in one time,
             # process subset of the transcript and show the start and end time for the subset
 
-            print(f'Summary of video "{d.metadata["title"]}"'
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]}&t={d.metadata["video_start"]}s)'
                   f' from {d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
                   f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
             source_doc = d.metadata["source"] + f"&t={d.metadata['video_start']}s"
         else:
-            print(f'Summary of video "{d.metadata["title"]}"\n')
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]})\n')
             source_doc = d.metadata["source"]
 
         d_summary = per_document_llm_chain.run(context=d.page_content, summary_keywords=summary_keywords)
         smaller_summaries.append((source_doc, d_summary))
 
-        if 'gpt-4' in open_ai_model:
+        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
             logger.info(f'\nWaiting\n')
             print('\n')
             print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(47)
+            time.sleep(40)
 
     big_summary = ""
     for source, summary in smaller_summaries:
@@ -369,9 +369,9 @@ def get_summary_with_keywords(documents: List[Document],
         # If there is only a single video then we don't need to create a combined summary
         return big_summary
 
-    logger.info("Creating combined summary")
+    logger.info("Generating consolidated summary based on your search topics")
     print('\n')
-    print("Creating combined summary")
+    print("##### Generating consolidated summary based on your search topics")
     print('\n')
 
     llm_2 = ChatOpenAI(model_name=open_ai_model,
@@ -414,6 +414,7 @@ async def aget_summary_with_keywords(documents: List[Document],
     :param combine_document_template: prompt dict with system and user prompts to be used while processing combined summary
             from different videos
     :param open_ai_model: model to be used for summarization
+    :param total_videos: total videos being processed
     :return: the result summary
     """
 
@@ -425,12 +426,12 @@ async def aget_summary_with_keywords(documents: List[Document],
         print('\n')
 
         if d.metadata["did_split_happen"]:
-            print(f'Summary of video "{d.metadata["title"]}"'
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]}&t={d.metadata["video_start"]}s)'
                   f' from {d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
                   f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
             source_doc = d.metadata["source"] + f"&t={d.metadata['video_start']}s"
         else:
-            print(f'Summary of video "{d.metadata["title"]}"\n')
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]})\n')
             source_doc = d.metadata["source"]
 
         d_summary = await acompletion_with_retry(model_name=open_ai_model,
@@ -440,12 +441,11 @@ async def aget_summary_with_keywords(documents: List[Document],
 
         smaller_summaries.append((source_doc, d_summary))
 
-        if 'gpt-4' in open_ai_model:
+        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
             logger.info(f'\nWaiting\n')
             print('\n')
             print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(47)
-
+            time.sleep(40)
 
     big_summary = ""
     for source, summary in smaller_summaries:
@@ -455,9 +455,9 @@ async def aget_summary_with_keywords(documents: List[Document],
         # If there is only a single video then we don't need to create a combined summary
         return big_summary
 
-    logger.info("Creating combined summary")
+    logger.info("Generating consolidated summary based on your search topics")
     print('\n')
-    print("Creating combined summary")
+    print("##### Generating consolidated summary based on your search topics")
     print('\n')
 
     summaries = divide_big_summary_into_parts(big_summary, open_ai_model)
@@ -507,20 +507,20 @@ def get_summary_of_each_video(documents: List[Document],
         logger.info(f'Summary {i}:\n')
         print('\n')
         if d.metadata["did_split_happen"]:
-            print(f'Summary of video "{d.metadata["title"]}" from '
-                  f'{d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]}&t={d.metadata["video_start"]}s)'
+                  f' from {d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
                   f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
         else:
-            print(f'Summary of video "{d.metadata["title"]}"\n')
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]})\n')
 
         d_summary = per_document_llm_chain.run(context=d.page_content)
-        if 'gpt-4' in open_ai_model:
+        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
             logger.info(f'\nWaiting\n')
             print('\n')
             print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(47)
+            time.sleep(40)
         summary += d_summary
-        summary += f"\n\nSource: https://www.youtube.com/watch?v={d.metadata['source']}"
+        summary += f"\n\nSource: {d.metadata['source']}"
         if d.metadata["did_split_happen"]:
             summary += f"&t={d.metadata['video_start']}s"
         summary += "\n"
@@ -547,23 +547,23 @@ async def aget_summary_of_each_video(documents: List[Document],
         logger.info(f'Summary {i}:\n')
         print('\n')
         if d.metadata["did_split_happen"]:
-            print(f'Summary of video "{d.metadata["title"]}" from '
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]}&t={d.metadata["video_start"]}s) from '
                   f'{d.metadata["start_min"]}:{d.metadata["start_sec"]} to '
                   f'{d.metadata["end_min"]}:{d.metadata["end_sec"]} \n')
         else:
-            print(f'Summary of video "{d.metadata["title"]}"\n')
+            print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]})\n')
 
         d_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=per_document_template,
                                                  context=d.page_content)
 
-        if 'gpt-4' in open_ai_model:
+        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
             logger.info(f'\nWaiting\n')
             print('\n')
             print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(47)
+            time.sleep(40)
         summary += d_summary
-        summary += f"\n\nSource: https://www.youtube.com/watch?v={d.metadata['source']}"
+        summary += f"\n\nSource: {d.metadata['source']}"
         if d.metadata["did_split_happen"]:
             summary += f"&t={d.metadata['video_start']}s"
         summary += "\n"
