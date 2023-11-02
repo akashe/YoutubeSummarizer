@@ -3,10 +3,40 @@ import streamlit as st
 import validators
 import redirect as rd
 import asyncio
+import openai
 
 from process_videos import process_videos
 
+
+def ui_spacer(n=2, line=False, next_n=0):
+    for _ in range(n):
+        st.write('')
+    if line:
+        st.tabs([' '])
+    for _ in range(next_n):
+        st.write('')
+
+
 with st.sidebar:
+    ui_spacer(25)
+    st.markdown(f"""
+    ## YouTube Insight
+    """)
+    st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
+    # ui_spacer(1)
+    st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
+
+st.header("YouTube Insight: Summarizing Videos For You")
+ui_spacer(1)
+
+st.markdown(
+    "Welcome to YouTube Insight! Extract key information from any YouTube video swiftly and efficiently. "
+    "Simply paste the URL, plug in your search terms, and get either a general or "
+    "specific summary. Handle multiple videos simultaneously and save time!"
+)
+ui_spacer(1)
+
+with st.expander("Settings"):
     model_name = st.selectbox(
         'Which LLM you prefer to use?',
         ('GPT-3.5-turbo-16k: Cost effective', 'GPT-4: Precise but costly'))
@@ -15,22 +45,13 @@ with st.sidebar:
 
     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-    os.environ["OPENAI_API_KEY"] = openai_api_key
+    openai.api_key = openai_api_key
 
-st.title("InfoScribe: Your Personal Video News Reporter")
-
-st.markdown(
-    "Welcome to InfoScribe, your go-to web app for staying informed and up-to-date with the latest videos from your favorite YouTube videos. "
-    "In today's fast-paced digital world, it can be challenging to keep track of the wealth of information available online. That's where InfoScribe comes to your rescue!")
-st.markdown(
-    "Are you tired of spending hours sifting through YouTube videos trying to find the information that matters most to you? Do you want a personalized news reporter"
-    " that highlights the crucial details from the videos you care about? Look no further. InfoScribe is here to simplify your information consumption process and provide you with a tailored news experience like never before.")
-
-with st.form("Process videos"):
+with st.form("Analysis"):
     try:
-        video_links = st.text_input("Enter list of youtube videos, separated by comma",
-                       placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
-                                   "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2")
+        video_links = st.text_input("Enter Comma-Separated YouTube video urls",
+                                    placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
+                                                "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2")
 
         video_links = video_links.strip().split(",")
         video_links = [video.strip() for video in video_links if video != ""]
@@ -47,23 +68,20 @@ with st.form("Process videos"):
     except Exception as e:
         st.error('Please enter valid youtube video urls separated by comma')
 
-    try:
-        search_terms = st.text_input("Enter topics you want summary for, separated by comma",
-                                     placeholder="nutrition, OpenAI, Israel")
+    search_terms = st.text_input("Enter Topic(s) For Custom Summary (leave blank for general summary)",
+                                 placeholder="nutrition, OpenAI, Israel",
+                                 help="Input topics, separated by commas, this will gather all related mentions from the "
+                                      "videos for a focused summary.\n Try using GPT-4 for more than 1 topic.")
 
-        if len(search_terms) == 0:
-            raise Exception
-    except Exception as e:
-        st.error("If you don't enter search term, a general summary will be returned for all videos.")
-
-    return_sources = st.toggle("Return sources")
+    return_sources = st.toggle("Return sources",
+                               help="Get source urls in the combined summary")
 
     submitted = st.form_submit_button("Submit")
 
     to_out = st.empty()
 
     if not openai_api_key:
-        st.info("Please add your OpenAI key in the sidebar to continue.")
+        st.info("Please add your OpenAI key in the Settings to continue.")
     elif submitted:
 
         if not search_terms == "":
@@ -80,8 +98,8 @@ with st.form("Process videos"):
                                "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2"]
 
             _ = asyncio.run(
-                process_videos(video_links,
-                               search_terms,
-                               return_sources,
-                               model_name)
+                process_videos(youtube_video_links=video_links,
+                               search_terms=search_terms,
+                               get_source=return_sources,
+                               model_name=model_name)
             )

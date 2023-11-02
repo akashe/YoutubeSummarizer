@@ -44,18 +44,22 @@ async def process_channels(
         if video_ids is not None:
             latest_video_ids.extend(video_ids)
 
-    video_titles = []
-    for video_id in latest_video_ids:
-        video_titles.append(youtube_connect.get_video_title(video_id))
-
     logger.info(f"Analyzing a total of {len(latest_video_ids)} videos")
     print("\n")
     if len(latest_video_ids) == 0:
         print(f"No videos uploaded in the last {summary_of_n_weeks} week")
+        return "-1"
     elif len(latest_video_ids) > 1:
         print(f"Analyzing a total of {len(latest_video_ids)} videos")
     else:
         print(f"Analyzing a total of {len(latest_video_ids)} video")
+
+    print("\n")
+    video_titles = []
+    for id, video_id in enumerate(latest_video_ids):
+        video_title = youtube_connect.get_video_title(video_id)
+        video_titles.append(video_title)
+        print(f"{id+1}. [{video_title}](https://www.youtube.com/watch?v={video_id})")
 
     assert len(video_titles) == len(latest_video_ids)
 

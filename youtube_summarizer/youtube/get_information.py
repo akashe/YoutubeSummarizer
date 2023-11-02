@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import json
 # Sample Python code for youtube.captions.download
 # NOTE: This sample code downloads a file and can't be executed via this
 #       interface. To data this sample, you must run it locally using your
@@ -8,9 +8,9 @@
 # See instructions for running these code samples locally:
 # https://developers.google.com/explorer-help/code-samples#python
 
-import io
 import os
 import re
+import streamlit as st
 
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
@@ -29,7 +29,6 @@ from .parsers import get_channel_id_from_list_username_response, \
 
 
 class YoutubeConnect:
-
     """
     Class to connect and get information to YouTube Data API.
     The class won't work without a credentials.json that contains the:
@@ -49,11 +48,45 @@ class YoutubeConnect:
         Authenticate credentials and create a client for YouTube Data API.
         """
 
-        assert os.path.exists(self.client_secrets_file), "Download credentials.json from your Google Workspace Project"
+        streamlit_secret_file_present = os.path.exists(os.path.join(".streamlit/", "secrets.toml")) or os.path.exists(
+            os.path.join("/.streamlit/", "secrets.toml"))
+
+        if not os.path.exists(self.client_secrets_file) and \
+                streamlit_secret_file_present and \
+                "client_id" in st.secrets:
+            data = {
+                "web": {
+                    "client_id": st.secrets["client_id"],
+                    "project_id": st.secrets["project_id"],
+                    "auth_uri": st.secrets["auth_uri"],
+                    "token_uri": st.secrets["token_uri"],
+                    "auth_provider_x509_cert_url": st.secrets["auth_provider_x509_cert_url"],
+                    "client_secret": st.secrets["client_secret"],
+                    "token": st.secrets["redirect_uris"],
+                }
+            }
+
+            with open(self.client_secrets_file, "w") as f:
+                json.dump(data, f)
+        else:
+            assert os.path.exists(
+                self.client_secrets_file), "Download credentials.json from your Google Workspace Project"
 
         creds = None
-        if os.path.exists('token.json'):
+        if streamlit_secret_file_present and "token" in st.secrets:
+            mapping = {
+                "token": st.secrets["token"],
+                "refresh_token": st.secrets["refresh_token"],
+                "token_uri": st.secrets["token_uri"],
+                "client_id": st.secrets["client_id"],
+                "client_secret": st.secrets["client_secret"],
+                "scopes": st.secrets["scopes"],
+                "expiry": st.secrets["expiry"],
+            }
+            creds = Credentials.from_authorized_user_info(mapping, self.scopes)
+        elif os.path.exists('token.json'):
             creds = Credentials.from_authorized_user_file('token.json', self.scopes)
+
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
@@ -149,7 +182,7 @@ class YoutubeConnect:
 
     def get_last_n_videos_from_playlist(self, playlist_id, n) -> List[str]:
 
-        assert n<=50, "Cant get more than 50 videos"
+        assert n <= 50, "Cant get more than 50 videos"
 
         try:
             request = self.youtube.playlistItems().list(

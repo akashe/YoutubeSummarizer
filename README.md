@@ -1,6 +1,6 @@
 ## Welcome to the Youtube Summarizer
 
-[Click here to try out the app!](url)
+[Click here to try out the app!](https://youtubeinsight.streamlit.app/)
 
 In the modern world, we find ourselves overwhelmed with an overabundance of content on a daily basis. Furthermore, staying on top of the latest videos, podcasts, and interviews could be an uphill task, especially in fields such as AI. 
 
