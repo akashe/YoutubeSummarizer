@@ -7,6 +7,7 @@ import openai
 
 from process_videos import process_videos
 
+
 def ui_spacer(n=2, line=False, next_n=0):
     for _ in range(n):
         st.write('')
@@ -17,23 +18,23 @@ def ui_spacer(n=2, line=False, next_n=0):
 
 
 with st.sidebar:
-    ui_spacer(27)
+    ui_spacer(25)
     st.markdown(f"""
     ## YouTube Insight
     """)
     st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
-    #ui_spacer(1)
+    # ui_spacer(1)
     st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
 
-st.header("YouTube Insight: Summarizing Media For You")
+st.header("YouTube Insight: Summarizing Videos For You")
+ui_spacer(1)
 
 st.markdown(
-    ""
     "Welcome to YouTube Insight! Extract key information from any YouTube video swiftly and efficiently. "
     "Simply paste the URL, plug in your search terms, and get either a general or "
-    "specific summary. Handle multiple videos simultaneously and save time with YouTube Insight!"
-    ""
-    )
+    "specific summary. Handle multiple videos simultaneously and save time!"
+)
+ui_spacer(1)
 
 with st.expander("Settings"):
     model_name = st.selectbox(
@@ -48,9 +49,9 @@ with st.expander("Settings"):
 
 with st.form("Analysis"):
     try:
-        video_links = st.text_input("Enter list of youtube videos, separated by comma",
-                       placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
-                                   "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2")
+        video_links = st.text_input("Enter Comma-Separated YouTube video urls",
+                                    placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
+                                                "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2")
 
         video_links = video_links.strip().split(",")
         video_links = [video.strip() for video in video_links if video != ""]
@@ -67,17 +68,13 @@ with st.form("Analysis"):
     except Exception as e:
         st.error('Please enter valid youtube video urls separated by comma')
 
-    try:
-        search_terms = st.text_input("Enter topics you want summary for, separated by comma",
-                                     placeholder="nutrition, OpenAI, Israel",
-                                     help="Try using GPT-4 for more than 1 search term")
+    search_terms = st.text_input("Enter Topic(s) For Custom Summary (leave blank for general summary)",
+                                 placeholder="nutrition, OpenAI, Israel",
+                                 help="Input topics, separated by commas, this will gather all related mentions from the "
+                                      "videos for a focused summary.\n Try using GPT-4 for more than 1 topic.")
 
-        if len(search_terms) == 0:
-            raise Exception
-    except Exception as e:
-        st.error("If you don't enter search term, a general summary will be returned for all videos.")
-
-    return_sources = st.toggle("Return sources")
+    return_sources = st.toggle("Return sources",
+                               help="Get source urls in the combined summary")
 
     submitted = st.form_submit_button("Submit")
 
@@ -101,8 +98,8 @@ with st.form("Analysis"):
                                "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2"]
 
             _ = asyncio.run(
-                process_videos(video_links,
-                               search_terms,
-                               return_sources,
-                               model_name)
+                process_videos(youtube_video_links=video_links,
+                               search_terms=search_terms,
+                               get_source=return_sources,
+                               model_name=model_name)
             )

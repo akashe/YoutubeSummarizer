@@ -17,7 +17,7 @@ def ui_spacer(n=2, line=False, next_n=0):
 
 
 with st.sidebar:
-    ui_spacer(27)
+    ui_spacer(25)
     st.markdown(f"""
     ## YouTube Insight
     """)
@@ -25,13 +25,15 @@ with st.sidebar:
     #ui_spacer(1)
     st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
 
-st.header("YouTube Insight: Summarizing Media For You")
+st.header("YouTube Insight: Summarizing Videos For You")
+ui_spacer(1)
 
 st.markdown(
-    "\nWelcome to YouTube Insight! Extract key information from any YouTube channel swiftly and efficiently. "
+    "Welcome to YouTube Insight! Extract key information from any YouTube channel swiftly and efficiently. "
     "Simply paste the channel URL, specify timeframe, plug in your search terms, and get either a general or "
-    "specific summary. Handle multiple channels simultaneously and save time with YouTube Insight!\n"
+    "specific summary. Handle multiple channels simultaneously and save time!"
 )
+ui_spacer(1)
 
 with st.expander("Settings"):
     model_name = st.selectbox(
@@ -46,7 +48,7 @@ with st.expander("Settings"):
 
 with st.form("YoutubeSummary"):
     try:
-        youtube_channels = st.text_input("Enter list of youtube channels, separated by comma",
+        youtube_channels = st.text_input("EEnter Comma-Separated YouTube channel urls",
                                          placeholder="https://www.youtube.com/c/lexfridman, https://www.youtube.com/@hubermanlab")
 
         youtube_channels = youtube_channels.strip().split(",")
@@ -62,17 +64,14 @@ with st.form("YoutubeSummary"):
 
     last_n_weeks = st.selectbox("Gather videos from the channels for last how many weeks?",
                                 (1, 2, 3))
-    try:
-        search_terms = st.text_input("Enter topics you want summary for, separated by comma",
-                                     placeholder="nutrition, OpenAI, Israel",
-                                     help="Try using GPT-4 for more than 1 search term")
 
-        if len(search_terms) == 0:
-            raise Exception
-    except Exception as e:
-        st.error("If you don't enter search term, a general summary will be returned for all videos.")
+    search_terms = st.text_input("Enter Topic(s) For Custom Summary (leave blank for general summary)",
+                                 placeholder="nutrition, OpenAI, Israel",
+                                 help="Input topics, separated by commas, this will gather all related mentions from the "
+                                      "videos for a focused summary.\n Try using GPT-4 for more than 1 topic.")
 
-    return_sources = st.toggle("Return sources")
+    return_sources = st.toggle("Return sources",
+                               help="Get source urls in the combined summary")
 
     submitted = st.form_submit_button("Submit")
 
