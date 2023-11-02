@@ -18,7 +18,7 @@ def ui_spacer(n=2, line=False, next_n=0):
 
 
 with st.sidebar:
-    ui_spacer(25)
+    #ui_spacer(5)
     st.markdown(f"""
     ## YouTube Insight
     """)
