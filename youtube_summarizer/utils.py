@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 import json
-from typing import List, Tuple
+from typing import List
 import openai
+import streamlit as st
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
@@ -60,3 +61,22 @@ def http_connection_decorator(func):
             await openai.aiosession.get().close()
 
     return inner
+
+
+def is_valid_openai_api_key(api_key: str) -> bool:
+    openai.api_key = api_key
+    try:
+        openai.Model.list()
+    except openai.error.AuthenticationError as e:
+        return False
+    else:
+        return True
+
+
+def ui_spacer(n=2, line=False, next_n=0):
+    for _ in range(n):
+        st.write('')
+    if line:
+        st.tabs([' '])
+    for _ in range(next_n):
+        st.write('')
