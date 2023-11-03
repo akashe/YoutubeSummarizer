@@ -6,36 +6,39 @@ import redirect as rd
 import asyncio
 import openai
 
-
-def ui_spacer(n=2, line=False, next_n=0):
-    for _ in range(n):
-        st.write('')
-    if line:
-        st.tabs([' '])
-    for _ in range(next_n):
-        st.write('')
-
+from utils import is_valid_openai_api_key, ui_spacer
 
 with st.sidebar:
-    #ui_spacer(25)
     st.markdown(f"""
     ## YouTube Insight
     """)
     st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
-    #ui_spacer(1)
     st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
 
-st.header("YouTube Insight: Summarizing Videos For You")
-ui_spacer(1)
+st.subheader("YouTube Insight: Streamline Your YouTube Experience")
+
+ui_spacer(2)
 
 st.markdown(
-    "Welcome to YouTube Insight! Extract key information from any YouTube channel swiftly and efficiently. "
-    "Simply paste the channel URL, specify timeframe, plug in your search terms, and get either a general or "
-    "specific summary. Handle multiple channels simultaneously and save time!"
-)
-ui_spacer(1)
+    """
+    👋 Welcome to YouTube Insight!
 
-with st.expander("Settings"):
+🔗 Paste the URL of a channel.
+
+📆 Select a timeframe for channels. Options range from 1 to 3 weeks.
+  
+⭐️ Expect a general summary by default, outlining content from videos released in that time.
+
+💡 Enter search terms to shift from general to specific, topic-focused summaries.
+
+🔥 Process multiple channels at once for insightful content overviews.
+
+🎯 Get the gist quickly and start navigating YouTube smarter, not harder!
+    """
+)
+ui_spacer(2)
+
+with st.expander("Configuration"):
     model_name = st.selectbox(
         'Which LLM you prefer to use?',
         ('GPT-3.5-turbo-16k: Cost effective', 'GPT-4: Precise but costly'))
@@ -44,11 +47,10 @@ with st.expander("Settings"):
 
     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-    openai.api_key = openai_api_key
 
 with st.form("YoutubeSummary"):
     try:
-        youtube_channels = st.text_input("EEnter Comma-Separated YouTube channel urls",
+        youtube_channels = st.text_input("Enter Comma-Separated YouTube channel urls",
                                          placeholder="https://www.youtube.com/c/lexfridman, https://www.youtube.com/@hubermanlab")
 
         youtube_channels = youtube_channels.strip().split(",")
@@ -77,9 +79,15 @@ with st.form("YoutubeSummary"):
 
     to_out = st.empty()
 
-    if not openai_api_key:
-        st.info("Please add your OpenAI key in the Settings to continue.")
-    elif submitted:
+    if submitted and not openai_api_key:
+        st.error("Please add your OpenAI key in the Configuration tab to continue.")
+
+    if submitted and openai_api_key and not is_valid_openai_api_key(openai_api_key):
+        st.error("Please enter a valid OpenAI key in the Configuration tab to continue.")
+
+    if submitted and openai_api_key and is_valid_openai_api_key(openai_api_key):
+
+        openai.api_key = openai_api_key
 
         if not search_terms == "":
             search_terms = search_terms.split(",")

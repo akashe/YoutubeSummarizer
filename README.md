@@ -1,4 +1,4 @@
-## Welcome to the Youtube Summarizer
+## YouTube Insight: Streamline Your YouTube Experience
 
 [Click here to try it out!](https://youtubeinsight.streamlit.app/)
 
