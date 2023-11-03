@@ -1,5 +1,5 @@
 credentials.json
-youtube_summarizer/token.json
+token.json
 
 .idea/*
 test.py
