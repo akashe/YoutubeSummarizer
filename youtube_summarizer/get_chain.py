@@ -197,7 +197,8 @@ def get_max_tokens(text: str, model_name:str) -> int:
     enc = tiktoken.encoding_for_model(model_name)
     enc_text = enc.encode(text)
 
-    return min(model_max_tokens - len(enc_text) - 20, 512)
+    # Setting 1500 to allow for more output from GPT 4 turbo models with 128k context len
+    return min(model_max_tokens - len(enc_text) - 20, 1500)
 
 
 def _create_retry_decorator(
