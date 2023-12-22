@@ -7,45 +7,45 @@ import openai
 
 from process_videos import process_videos
 
-
-def ui_spacer(n=2, line=False, next_n=0):
-    for _ in range(n):
-        st.write('')
-    if line:
-        st.tabs([' '])
-    for _ in range(next_n):
-        st.write('')
-
+from utils import is_valid_openai_api_key, ui_spacer
 
 with st.sidebar:
-    ui_spacer(25)
     st.markdown(f"""
     ## YouTube Insight
     """)
     st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
-    # ui_spacer(1)
     st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
 
-st.header("YouTube Insight: Summarizing Videos For You")
-ui_spacer(1)
+st.subheader("YouTube Insight: Streamline Your YouTube Experience")
+
+ui_spacer(2)
 
 st.markdown(
-    "Welcome to YouTube Insight! Extract key information from any YouTube video swiftly and efficiently. "
-    "Simply paste the URL, plug in your search terms, and get either a general or "
-    "specific summary. Handle multiple videos simultaneously and save time!"
-)
-ui_spacer(1)
+    """
+    👋 Welcome to YouTube Insight!
 
-with st.expander("Settings"):
+🔗 Paste the URL of a video.
+
+⭐️ Expect a general summary by default, outlining main video content.
+
+💡 Enter search terms to shift from general to specific, topic-focused summaries.
+
+🔥 Process multiple videos at once for insightful content overviews.
+
+🎯 Get the gist quickly and start navigating YouTube smarter, not harder!
+    """
+)
+ui_spacer(2)
+
+with st.expander("Configuration"):
     model_name = st.selectbox(
         'Which LLM you prefer to use?',
-        ('GPT-3.5-turbo-16k: Cost effective', 'GPT-4: Precise but costly'))
+        ('GPT-3.5-turbo-16k: Cost effective', 'GPT-4-1106-Preview: Precise but costly'))
 
     model_name = model_name.split(":")[0].lower()
 
     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-    openai.api_key = openai_api_key
 
 with st.form("Analysis"):
     try:
@@ -80,9 +80,15 @@ with st.form("Analysis"):
 
     to_out = st.empty()
 
-    if not openai_api_key:
-        st.info("Please add your OpenAI key in the Settings to continue.")
-    elif submitted:
+    if submitted and not openai_api_key:
+        st.error("Please add your OpenAI key in the Configuration tab to continue.")
+
+    if submitted and openai_api_key and not is_valid_openai_api_key(openai_api_key):
+        st.error("Please enter a valid OpenAI key in the Configuration tab to continue.")
+
+    if submitted and openai_api_key and is_valid_openai_api_key(openai_api_key):
+
+        openai.api_key = openai_api_key
 
         if not search_terms == "":
             search_terms = search_terms.split(",")

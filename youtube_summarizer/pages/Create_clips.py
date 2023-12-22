@@ -1,12 +1,21 @@
 import os
 import streamlit as st
-from process_channels import process_channels
 import validators
 import redirect as rd
 import asyncio
 import openai
+from copy import deepcopy
 
-from utils import is_valid_openai_api_key, ui_spacer
+from process_clips import create_clips_for_video
+
+import streamlit.components.v1 as components
+
+from utils import is_valid_openai_api_key, ui_spacer, process_html_string
+
+with open("youtube_summarizer/html_code_default_play.html","r") as f:
+    html_code = f.read()
+
+st.session_state.show_player = False
 
 with st.sidebar:
     st.markdown(f"""
@@ -23,15 +32,11 @@ st.markdown(
     """
     👋 Welcome to YouTube Insight!
 
-🔗 Paste the URL of a channel.
+🔗 Paste the URL of a video.
 
-📆 Select a timeframe for channels. Options range from 1 to 3 weeks.
-  
-⭐️ Expect a general summary by default, outlining content from videos released in that time.
+⭐️ Create clips from a youtube video.
 
-💡 Enter search terms to shift from general to specific, topic-focused summaries.
-
-🔥 Process multiple channels at once for insightful content overviews.
+💡 No need to watch the whole video. Just see the most important parts of it.
 
 🎯 Get the gist quickly and start navigating YouTube smarter, not harder!
     """
@@ -48,32 +53,31 @@ with st.expander("Configuration"):
     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
 
-with st.form("YoutubeSummary"):
+with st.form("Analysis"):
     try:
-        youtube_channels = st.text_input("Enter Comma-Separated YouTube channel urls",
-                                         placeholder="https://www.youtube.com/c/lexfridman, https://www.youtube.com/@hubermanlab")
+        video_links = st.text_input("Enter Comma-Separated YouTube video urls",
+                                    placeholder="https://www.youtube.com/watch?v=dBH3nMNKtaQ, "
+                                                "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2")
 
-        youtube_channels = youtube_channels.strip().split(",")
-        youtube_channels = [channel.strip() for channel in youtube_channels if channel != ""]
+        video_links = video_links.strip().split(",")
+        video_links = [video.strip() for video in video_links if video != ""]
+        video_links = [video.split("&")[0] for video in video_links]
 
-        url_check = [validators.url(channel) for channel in youtube_channels]
-        youtube_urls = ["youtube" in url for url in youtube_channels]
+        print(video_links)
 
-        if not all(url_check) or not all(youtube_urls):
+        url_check = [validators.url(video) for video in video_links]
+        video_check = ["watch" in video or "youtu.be" in video for video in video_links]
+
+        if not all(url_check) or not all(video_check):
             raise Exception
-    except Exception as e:
-        st.error('Please enter valid urls separated by comma')
 
-    last_n_weeks = st.selectbox("Gather videos from the channels for last how many weeks?",
-                                (1, 2, 3))
+    except Exception as e:
+        st.error('Please enter valid youtube video urls separated by comma')
 
     search_terms = st.text_input("Enter Topic(s) For Custom Summary (leave blank for general summary)",
                                  placeholder="nutrition, OpenAI, Israel",
                                  help="Input topics, separated by commas, this will gather all related mentions from the "
                                       "videos for a focused summary.\n Try using GPT-4 for more than 1 topic.")
-
-    return_sources = st.toggle("Return sources",
-                               help="Get source urls in the combined summary")
 
     submitted = st.form_submit_button("Submit")
 
@@ -87,7 +91,9 @@ with st.form("YoutubeSummary"):
 
     if submitted and openai_api_key and is_valid_openai_api_key(openai_api_key):
 
+        st.session_state.show_player = True
         openai.api_key = openai_api_key
+        os.environ["OPENAI_API_KEY"] = openai_api_key
 
         if not search_terms == "":
             search_terms = search_terms.split(",")
@@ -97,18 +103,17 @@ with st.form("YoutubeSummary"):
 
         with rd.stdout(to=to_out, format="markdown"):
 
-            to_out.empty()
-
-            if len(youtube_channels) == 0:
+            if len(video_links) == 0:
                 print("Generating summaries using default options")
-                youtube_channels = ["https://www.youtube.com/c/lexfridman",
-                                    "https://www.youtube.com/@hubermanlab"]
-                last_n_weeks = 3
+                video_links = ["https://www.youtube.com/watch?v=dBH3nMNKtaQ",
+                               "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2"]
 
-            _ = asyncio.run(
-                process_channels(youtube_channels,
-                                 last_n_weeks,
-                                 search_terms,
-                                 return_sources,
-                                 model_name)
-            )
+            if st.session_state.get('show_player', True):
+                videos_json = asyncio.run(
+                    create_clips_for_video(youtube_video_links=video_links,
+                                           model_name=model_name)
+                )
+
+                new_html_code = deepcopy(html_code).replace('{{VIDEOS_JSON}}', videos_json)
+
+                components.html(new_html_code, height=800)

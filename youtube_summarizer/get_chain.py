@@ -1,9 +1,12 @@
+import pdb
+
 import json
 import time
 import sys
 from copy import deepcopy
 
 import openai
+from openai import AsyncOpenAI, OpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -197,7 +200,8 @@ def get_max_tokens(text: str, model_name:str) -> int:
     enc = tiktoken.encoding_for_model(model_name)
     enc_text = enc.encode(text)
 
-    return min(model_max_tokens - len(enc_text) - 20, 512)
+    # Setting 1500 to allow for more output from GPT 4 turbo models with 128k context len
+    return min(model_max_tokens - len(enc_text) - 20, 1500)
 
 
 def _create_retry_decorator(
@@ -214,11 +218,12 @@ def _create_retry_decorator(
     import openai
 
     errors = [
-        openai.error.Timeout,
-        openai.error.APIError,
-        openai.error.APIConnectionError,
-        openai.error.RateLimitError,
-        openai.error.ServiceUnavailableError,
+        openai.Timeout,
+        openai.APIError,
+        openai.APIConnectionError,
+        openai.RateLimitError,
+        openai.APIStatusError,
+        openai.InternalServerError
     ]
     return create_base_retry_decorator(
         error_types=errors, max_retries=max_tries, run_manager=run_manager
@@ -247,26 +252,23 @@ async def acompletion_with_retry(max_tries=6,
 
 async def aget_response_from_llm(model_name: str,
                                  prompt_dict: dict,
-                                 context: str,
-                                 stream: bool = True,
-                                 summary_keywords: Any = None) -> str:
+                                 max_tokens: int,
+                                 stream: bool = True
+                                 ) -> str:
     """
     Async call function for accessing OpenAI completion endpoints.
 
     :param model_name: model to be used
     :param prompt_dict: the prompt to be used for 'system' and 'user' roles
-    :param context: the transcripts of videos or combination of summaries of videos
+    :param max_tokens: the maximum number of output tokens in model response
     :param stream: whether to stream the generated answer or not
-    :param summary_keywords: keywords to focus on while summarization if present
     :return: returns the completion answer string from OpenAI
     """
 
-    prompt_dict = get_updated_prompts(prompt_dict, context, summary_keywords)
-
-    max_tokens = get_max_tokens(prompt_dict["system"]+prompt_dict["user"], model_name)
+    client = AsyncOpenAI()
 
     # get async generator for chat completion
-    response = await openai.ChatCompletion.acreate(
+    response = await client.chat.completions.create(
         model=model_name,
         messages=[
             {"role": "system", "content": prompt_dict["system"]},
@@ -279,7 +281,7 @@ async def aget_response_from_llm(model_name: str,
 
     if not stream:
         # If stream is set to False, then the answer is returned in a single chunk.
-        output = response['choices'][0]["message"]["content"]
+        output = response.choices[0].message.content
     else:
         # If stream is set to true then one has to iterate over each token individually.
         # We have to flush the token stdout, that allows the tokens to be present in the UI while
@@ -288,10 +290,10 @@ async def aget_response_from_llm(model_name: str,
         collected_response = []
         async for chunk in response:
             try:
-                finish = chunk['choices'][0]["finish_reason"]
+                finish = chunk.choices[0].finish_reason
                 if finish == "stop" or finish == "length":
                     break
-                chunk_message = chunk['choices'][0]['delta']["content"]  # extract the message
+                chunk_message = chunk.choices[0].delta.content  # extract the message
                 sys.stdout.write(chunk_message)
                 sys.stdout.flush()
                 collected_response.append(chunk_message)
@@ -354,12 +356,6 @@ def get_summary_with_keywords(documents: List[Document],
 
         d_summary = per_document_llm_chain.run(context=d.page_content, summary_keywords=summary_keywords)
         smaller_summaries.append((source_doc, d_summary))
-
-        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
-            logger.info(f'\nWaiting\n')
-            print('\n')
-            print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(40)
 
     big_summary = ""
     for source, summary in smaller_summaries:
@@ -434,18 +430,14 @@ async def aget_summary_with_keywords(documents: List[Document],
             print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]})\n')
             source_doc = d.metadata["source"]
 
+        prompt_dict = get_updated_prompts(per_document_template, d.page_content, summary_keywords)
+        max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
+
         d_summary = await acompletion_with_retry(model_name=open_ai_model,
-                                                 prompt_dict=per_document_template,
-                                                 context=d.page_content,
-                                                 summary_keywords=summary_keywords)
+                                                 prompt_dict=prompt_dict,
+                                                 max_tokens=max_tokens)
 
         smaller_summaries.append((source_doc, d_summary))
-
-        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
-            logger.info(f'\nWaiting\n')
-            print('\n')
-            print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(40)
 
     big_summary = ""
     for source, summary in smaller_summaries:
@@ -465,18 +457,23 @@ async def aget_summary_with_keywords(documents: List[Document],
     while len(summaries) > 1:
         smaller_chunks = ""
         for smaller_summary in summaries:
+
+            prompt_dict = get_updated_prompts(combine_document_template, smaller_summary, summary_keywords)
+            max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
+
             smaller_chunks += await acompletion_with_retry(model_name=open_ai_model,
-                                                           prompt_dict=combine_document_template,
-                                                           context=smaller_summary,
-                                                           stream=False,
-                                                           summary_keywords=summary_keywords)
+                                                           prompt_dict=prompt_dict,
+                                                           max_tokens=max_tokens,
+                                                           stream=False)
 
         summaries = divide_big_summary_into_parts(smaller_chunks, open_ai_model)
 
+    prompt_dict = get_updated_prompts(combine_document_template, summaries[0], summary_keywords)
+    max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
+
     final_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=combine_document_template,
-                                                 context=summaries[0],
-                                                 summary_keywords=summary_keywords)
+                                                 max_tokens=max_tokens)
     return final_summary
 
 
@@ -514,11 +511,6 @@ def get_summary_of_each_video(documents: List[Document],
             print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]})\n')
 
         d_summary = per_document_llm_chain.run(context=d.page_content)
-        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
-            logger.info(f'\nWaiting\n')
-            print('\n')
-            print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(40)
         summary += d_summary
         summary += f"\n\nSource: {d.metadata['source']}"
         if d.metadata["did_split_happen"]:
@@ -553,15 +545,13 @@ async def aget_summary_of_each_video(documents: List[Document],
         else:
             print(f'Summary of video [{d.metadata["title"]}]({d.metadata["source"]})\n')
 
-        d_summary = await acompletion_with_retry(model_name=open_ai_model,
-                                                 prompt_dict=per_document_template,
-                                                 context=d.page_content)
+        prompt_dict = get_updated_prompts(per_document_template, d.page_content)
+        max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
 
-        if 'gpt-4' in open_ai_model and i != (len(documents) - 1):
-            logger.info(f'\nWaiting\n')
-            print('\n')
-            print(f'Waiting to avoid token rate limits associated with GPT-4')
-            time.sleep(40)
+        d_summary = await acompletion_with_retry(model_name=open_ai_model,
+                                                 prompt_dict=prompt_dict,
+                                                 max_tokens=max_tokens)
+
         summary += d_summary
         summary += f"\n\nSource: {d.metadata['source']}"
         if d.metadata["did_split_happen"]:
