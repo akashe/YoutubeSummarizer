@@ -48,6 +48,8 @@ def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[
 
 
 def http_connection_decorator(func):
+    # Legacy code to maintain same HTTP clients for connections.
+    # Not needed for new version of openai python lib
     async def inner(*args, **kwargs):
         try:
             from aiohttp import ClientSession
@@ -66,8 +68,8 @@ def http_connection_decorator(func):
 def is_valid_openai_api_key(api_key: str) -> bool:
     openai.api_key = api_key
     try:
-        openai.Model.list()
-    except openai.error.AuthenticationError as e:
+        openai.models.list()
+    except openai.AuthenticationError as e:
         return False
     else:
         return True
@@ -80,3 +82,132 @@ def ui_spacer(n=2, line=False, next_n=0):
         st.tabs([' '])
     for _ in range(next_n):
         st.write('')
+
+
+def process_html_string(html_string):
+    # Replace multiple newlines with a single one, or remove them entirely
+    processed_string = ' '.join(html_string.splitlines())
+    return processed_string
+
+# HTML and JavaScript with dynamic sizing and f-string for videos
+html_code_default_play = """
+<div id="videoContainer" style="width: 100%;"></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+var player;
+var currentVideoIndex = 0;
+var videos = {videos_json};
+
+function onYouTubeIframeAPIReady() {{
+    loadVideo(currentVideoIndex);
+}}
+
+function loadVideo(index) {{
+    if (index < videos.length) {{
+        var video = videos[index];
+        var container = document.getElementById('videoContainer');
+        var width = container.offsetWidth;
+        var height = width * (9/16); // Maintain a 16:9 aspect ratio
+        player = new YT.Player('videoContainer', {{
+            height: height,
+            width: width,
+            videoId: video.id,
+            playerVars: {{
+                'autoplay': 1,
+                'start': video.start,
+                'end': video.end,
+                'controls': 1
+            }},
+            events: {{
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }}
+        }});
+    }}
+}}
+
+function onPlayerReady(event) {{
+    event.target.playVideo();
+}}
+
+function onPlayerStateChange(event) {{
+    if (event.data == YT.PlayerState.ENDED) {{
+        currentVideoIndex++;
+        if (currentVideoIndex < videos.length) {{
+            player.destroy(); // Destroy the current player
+            loadVideo(currentVideoIndex); // Load the next video
+        }}
+    }}
+}}
+
+window.onresize = function() {{
+    if (player) {{
+        var container = document.getElementById('videoContainer');
+        var width = container.offsetWidth;
+        var height = width * (9/16); // Maintain a 16:9 aspect ratio
+        player.setSize(width, height);
+    }}
+}};
+</script>
+"""
+
+html_code_default_pause = """
+<div id="videoContainer" style="width: 100%; cursor: pointer;"></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+var player;
+var currentVideoIndex = 0;
+var videos = {videos_json};
+
+function onYouTubeIframeAPIReady() {{
+    loadVideo(currentVideoIndex);
+}}
+
+function loadVideo(index) {{
+    if (index < videos.length) {{
+        var video = videos[index];
+        var container = document.getElementById('videoContainer');
+        var width = container.offsetWidth;
+        var height = width * (9/16); // Maintain a 16:9 aspect ratio
+        player = new YT.Player('videoContainer', {{
+            height: height,
+            width: width,
+            videoId: video.id,
+            playerVars: {{
+                'start': video.start,
+                'end': video.end,
+                'controls': 1
+            }},
+            events: {{
+                'onStateChange': onPlayerStateChange
+            }}
+        }});
+    }}
+}}
+
+function onPlayerStateChange(event) {{
+    if (event.data == YT.PlayerState.ENDED) {{
+        currentVideoIndex++;
+        if (currentVideoIndex < videos.length) {{
+            player.destroy(); // Destroy the current player
+            loadVideo(currentVideoIndex); // Load the next video
+        }}
+    }}
+}}
+
+document.getElementById('videoContainer').addEventListener('click', function() {{
+    if (!player.getPlayerState() || player.getPlayerState() == YT.PlayerState.CUED) {{
+        player.playVideo();
+    }}
+}});
+
+window.onresize = function() {{
+    if (player) {{
+        var container = document.getElementById('videoContainer');
+        var width = container.offsetWidth;
+        var height = width * (9/16); // Maintain a 16:9 aspect ratio
+        player.setSize(width, height);
+    }}
+}};
+</script>
+"""

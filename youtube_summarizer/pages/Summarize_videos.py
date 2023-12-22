@@ -25,7 +25,7 @@ st.markdown(
     👋 Welcome to YouTube Insight!
 
 🔗 Paste the URL of a video.
-  
+
 ⭐️ Expect a general summary by default, outlining main video content.
 
 💡 Enter search terms to shift from general to specific, topic-focused summaries.
