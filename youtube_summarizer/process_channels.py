@@ -21,13 +21,12 @@ from openai_prompts import get_per_document_with_keyword_prompt_template, \
 
 #["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
 #["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
-@http_connection_decorator
 async def process_channels(
     youtube_channel_links: List[str] = ["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"],
     summary_of_n_weeks: int = 1,
     search_terms: List[str] = None,
     get_source: bool = False,
-    model_name: str = "gpt-3.5-turbo-16k"
+    model_name: str = "gpt-4-1106-preview"
 ) -> str:
 
     latest_video_ids = []
