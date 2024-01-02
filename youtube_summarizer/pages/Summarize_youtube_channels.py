@@ -10,18 +10,18 @@ from utils import is_valid_openai_api_key, ui_spacer
 
 with st.sidebar:
     st.markdown(f"""
-    ## YouTube Insight
+    ## YouTube Buddy
     """)
     st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
     st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
 
-st.subheader("YouTube Insight: Streamline Your YouTube Experience")
+st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
 ui_spacer(2)
 
 st.markdown(
     """
-    👋 Welcome to YouTube Insight!
+    👋 Welcome to YouTube Buddy!
 
 🔗 Paste the URL of a channel.
 

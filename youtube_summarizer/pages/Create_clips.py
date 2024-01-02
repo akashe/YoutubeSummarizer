@@ -19,12 +19,12 @@ st.session_state.show_player = False
 
 with st.sidebar:
     st.markdown(f"""
-    ## YouTube Insight
+    ## YouTube Buddy
     """)
     st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
     st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
 
-st.subheader("YouTube Insight: Streamline Your YouTube Experience")
+st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
 ui_spacer(2)
 

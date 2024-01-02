@@ -63,13 +63,28 @@ if "thread_id" not in st.session_state:
 
 with st.sidebar:
     st.markdown(f"""
-    ## YouTube Insight
+    ## YouTube Buddy
     """)
     st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
     st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
 
-st.subheader("YouTube Insight: Streamline Your YouTube Experience")
+st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
+ui_spacer(2)
+
+st.markdown(
+    """
+    👋 Welcome to YouTube Buddy!
+
+🔗 Enter a valid OpenAI access key.
+
+⭐️ Interact with videos using chat.
+
+💡 Summarize videos, generate short clips from them, get latest videos released by your favourite channels.
+
+🎯 Get the gist quickly and start navigating YouTube smarter, not harder!
+    """
+)
 ui_spacer(2)
 
 with st.expander("Configuration"):
