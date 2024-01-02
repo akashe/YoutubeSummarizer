@@ -150,7 +150,6 @@ async def get_time_stamp_ranges(video_ids: List[str],
                                                       max_tokens=max_tokens,
                                                       stream=False)
 
-            print(key_points)
             prompt_dict = deepcopy(get_timestamp_prompt)
             prompt_dict["user"] = prompt_dict["user"].format(context=fixed_duration_transcript, summary=key_points)
             prompt_dict['system'] = prompt_dict['system'].format(len_range_items=n_len_range_items)
@@ -161,7 +160,6 @@ async def get_time_stamp_ranges(video_ids: List[str],
                                                                     max_tokens=max_tokens,
                                                                     stream=False)
 
-            print(fixed_duration_range_str)
             fixed_duration_range = ranges_in_float_from_llm_response(fixed_duration_range_str)
             ranges[video_id].extend(fixed_duration_range)
 
@@ -211,7 +209,6 @@ async def create_clips_for_video(youtube_video_links: List[str],
 
     # return the video ranges
     videos_json = json.dumps(ranges_with_video_ids)
-    print(videos_json)
 
     return videos_json
 
