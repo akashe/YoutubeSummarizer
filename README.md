@@ -1,6 +1,6 @@
-## YouTube Insight: Streamline Your YouTube Experience
+## YouTube Buddy: Streamline Your YouTube Experience
 
-[Click here to try it out!](https://youtubeinsight.streamlit.app/)
+[Click here to try it out!](https://youtubebuddy.streamlit.app/)
 
 In the modern world, we find ourselves overwhelmed with an overabundance of content on a daily basis. Furthermore, staying on top of the latest videos, podcasts, and interviews could be an uphill task, especially in fields such as AI. 
 
