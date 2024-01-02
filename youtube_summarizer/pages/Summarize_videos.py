@@ -88,7 +88,7 @@ with st.form("Analysis"):
 
     if submitted and openai_api_key and is_valid_openai_api_key(openai_api_key):
 
-        openai.api_key = openai_api_key
+        os.environ["OPENAI_API_KEY"] = openai_api_key
 
         if not search_terms == "":
             search_terms = search_terms.split(",")
