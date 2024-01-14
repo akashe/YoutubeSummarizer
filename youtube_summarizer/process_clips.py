@@ -242,7 +242,6 @@ async def create_clips_for_video(youtube_video_links: List[str],
 
     transcripts = get_transcripts(video_ids, video_titles)
     if len(transcripts) == 0:
-        print("\nTranscripts not available\n")
         return "Transcripts not available"
 
     # get time stamp ranges
