@@ -13,6 +13,8 @@ from copy import deepcopy
 from process_videos import process_videos
 from process_channels import process_channels
 from process_clips import create_clips_for_video
+from process_single_transcript import process_single_transcript
+
 
 from utils import is_valid_openai_api_key, ui_spacer, process_html_string
 from function_definitions import function_definitions
@@ -52,7 +54,8 @@ def return_assistant_messages(run_to_check, thread_id):
 available_functions = {
         "process_channels": process_channels,
         "process_videos": process_videos,
-        "create_clips_for_video": create_clips_for_video
+        "create_clips_for_video": create_clips_for_video,
+        "process_single_transcript": process_single_transcript
     }
 
 if "messages" not in st.session_state:
@@ -60,6 +63,13 @@ if "messages" not in st.session_state:
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = None
+
+if 'processing' not in st.session_state:
+    st.session_state.processing = False
+
+if 'input_key' not in st.session_state:
+    st.session_state.input_key = 0
+
 
 with st.sidebar:
     st.markdown(f"""
@@ -107,8 +117,9 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
         description="You an eager helpful assistant. You job is to simply experience of Youtube for people."
                     "You can help people in summarizing one or many youtube videos. You can retrieve and summarize"
                     "latest videos from youtube channel from last 3 weeks. You can help people in answering"
-                    "questions they might have in a youtube video."
-                    "Politely refuse for requests from user that are not possible for you.",
+                    "questions they might have about a youtube video by getting the transcript of the video and"
+                    "using the transcript to answer the question asked or return information that user maybe seeking"
+                    ,
         model="gpt-4-1106-preview",
         tools=function_definitions
     )
@@ -125,8 +136,16 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
         thread = client.beta.threads.create()
         st.session_state.thread_id = thread.id
 
-    if prompt := st.chat_input("Enter prompt"):
+    chat_input_placeholder = st.empty()
 
+    prompt = None
+    if not st.session_state.processing:
+        prompt = chat_input_placeholder.chat_input("Enter prompt", key=f"input_{st.session_state.input_key}")
+
+    if prompt:
+        st.session_state.processing = True
+        st.session_state.input_key += 1
+        chat_input_placeholder.empty()
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -161,43 +180,55 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                 function_to_call = available_functions[function_name]
                 function_args = json.loads(tool_call.function.arguments)
 
-                with st.chat_message("assistant"):
-                    with rd.stdout(to=st.empty(), format="markdown"):
-                        function_response = asyncio.run(
-                            function_to_call(
-                                **function_args
+                if function_name != "process_single_transcript":
+                    with st.chat_message("assistant"):
+                        with rd.stdout(to=st.empty(), format="markdown"):
+                            function_response = asyncio.run(
+                                function_to_call(
+                                    **function_args
+                                )
                             )
+
+                            if function_name == "create_clips_for_video":
+                                new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}',
+                                                                                         function_response)
+                                new_html_code = process_html_string(new_html_code)
+                                components.html(new_html_code, height=800)
+
+                    if function_name != "create_clips_for_video":
+                        st.session_state.messages.append({"role": "assistant", "content": function_response})
+                    if function_name == "create_clips_for_video":
+                        new_html_code = deepcopy(html_code_default_pause).replace('{{VIDEOS_JSON}}', function_response)
+                        new_html_code = process_html_string(new_html_code)
+                        st.session_state.messages.append(
+                            {"role": "assistant", "content": new_html_code, "html_code": True})
+                else:
+                    function_response = function_to_call(
+                            **function_args
                         )
-
-                        if function_name == "create_clips_for_video":
-                            new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}', function_response)
-                            new_html_code = process_html_string(new_html_code)
-                            #TODO: Remove extra spaces that appear in chat
-                            components.html(new_html_code, height=800)
-
-                if function_name != "create_clips_for_video":
-                    st.session_state.messages.append({"role": "assistant", "content": function_response})
-                if function_name == "create_clips_for_video":
-                    new_html_code = deepcopy(html_code_default_pause).replace('{{VIDEOS_JSON}}', function_response)
-                    new_html_code = process_html_string(new_html_code)
-                    st.session_state.messages.append({"role": "assistant", "content": new_html_code, "html_code": True})
 
                 tool_outputs.append({
                     "tool_call_id": tool_call_id,
                     "output": function_response
                 })
 
-            # Append the results of tool call
-            results_append_run = client.beta.threads.runs.submit_tool_outputs(
-                thread_id=st.session_state.thread_id,
-                run_id=run.id,
-                tool_outputs=tool_outputs)
+                # Append the results of tool call
+                results_append_run = client.beta.threads.runs.submit_tool_outputs(
+                    thread_id=st.session_state.thread_id,
+                    run_id=run.id,
+                    tool_outputs=tool_outputs)
 
-            results_append_run = check_run_status(results_append_run, st.session_state.thread_id)
+                results_append_run = check_run_status(results_append_run, st.session_state.thread_id)
+
+                if function_name == "process_single_transcript":
+                    return_assistant_messages(results_append_run, st.session_state.thread_id)
+
         else:
             return_assistant_messages(run, st.session_state.thread_id)
 
-        #TODO: handle openai.BadRequestError: Error code: 400 when you add text message when a run is active
+        st.session_state.processing = False
+        chat_input_placeholder.chat_input("Enter prompt", key=f"input_{st.session_state.input_key}")
+        # TODO: handle openai.BadRequestError: Error code: 400 when you add text message when a run is active
 
 else:
     st.error("Please enter a valid OpenAI key in the Configuration tab to continue.")

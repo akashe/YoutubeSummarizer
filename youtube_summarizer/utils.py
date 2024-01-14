@@ -86,8 +86,10 @@ def ui_spacer(n=2, line=False, next_n=0):
 
 def process_html_string(html_string):
     # Replace multiple newlines with a single one, or remove them entirely
-    processed_string = ' '.join(html_string.splitlines())
+    processed_string = ''.join(html_string.splitlines())
+    processed_string = processed_string.replace("\t", "").replace("    ", "")
     return processed_string
+
 
 # HTML and JavaScript with dynamic sizing and f-string for videos
 html_code_default_play = """
