@@ -43,17 +43,6 @@ st.markdown(
 )
 ui_spacer(2)
 
-'''
-with st.expander("Configuration"):
-    model_name = st.selectbox(
-        'Which LLM you prefer to use?',
-        ('GPT-3.5-turbo-16k: Cost effective', 'GPT-4-1106-Preview: Precise but costly'))
-
-    model_name = model_name.split(":")[0].lower()
-
-    openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
-    "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-'''
 model_name = 'GPT-4-1106-Preview: Precise but costly'.split(":")[0].lower()
 openai_api_key = st.secrets["openai_api_key"]
 
