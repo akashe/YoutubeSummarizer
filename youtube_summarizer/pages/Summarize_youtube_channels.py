@@ -99,16 +99,20 @@ with st.form("YoutubeSummary"):
 
             to_out.empty()
 
-            if len(youtube_channels) == 0:
-                print("Generating summaries using default options")
-                youtube_channels = ["https://www.youtube.com/c/lexfridman",
-                                    "https://www.youtube.com/@hubermanlab"]
-                last_n_weeks = 3
+            try:
+                if len(youtube_channels) == 0:
+                    print("Generating summaries using default options")
+                    youtube_channels = ["https://www.youtube.com/c/lexfridman",
+                                        "https://www.youtube.com/@hubermanlab"]
+                    last_n_weeks = 3
 
-            _ = asyncio.run(
-                process_channels(youtube_channels,
-                                 last_n_weeks,
-                                 search_terms,
-                                 return_sources,
-                                 model_name)
-            )
+                _ = asyncio.run(
+                    process_channels(youtube_channels,
+                                     last_n_weeks,
+                                     search_terms,
+                                     return_sources,
+                                     model_name)
+                )
+            except Exception as e:
+                msg = "Oops! Something is wrong with the request please retry."
+                print(msg)

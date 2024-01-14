@@ -98,14 +98,18 @@ with st.form("Analysis"):
 
         with rd.stdout(to=to_out, format="markdown"):
 
-            if len(video_links) == 0:
-                print("Generating summaries using default options")
-                video_links = ["https://www.youtube.com/watch?v=dBH3nMNKtaQ",
-                               "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2"]
+            try:
+                if len(video_links) == 0:
+                    print("Generating summaries using default options")
+                    video_links = ["https://www.youtube.com/watch?v=dBH3nMNKtaQ",
+                                   "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2"]
 
-            _ = asyncio.run(
-                process_videos(youtube_video_links=video_links,
-                               search_terms=search_terms,
-                               get_source=return_sources,
-                               model_name=model_name)
-            )
+                _ = asyncio.run(
+                    process_videos(youtube_video_links=video_links,
+                                   search_terms=search_terms,
+                                   get_source=return_sources,
+                                   model_name=model_name)
+                )
+            except Exception as e:
+                msg = "Oops! Something is wrong with the request please retry."
+                print(msg)

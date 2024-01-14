@@ -118,7 +118,8 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "You can help people in summarizing one or many youtube videos. You can retrieve and summarize"
                     "latest videos from youtube channel from last 3 weeks. You can help people in answering"
                     "questions they might have about a youtube video by getting the transcript of the video and"
-                    "using the transcript to answer the question asked or return information that user maybe seeking"
+                    "using the transcript to answer the question asked. Don't use summary to answer a question, use"
+                    "returned transcripts."
                     ,
         model="gpt-4-1106-preview",
         tools=function_definitions
@@ -170,59 +171,64 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                 st.markdown("I think my servers are having a fever. Can you retry again?")
 
         if run.status == "requires_action":
-            required_action = run.required_action
 
-            tool_calls = required_action.submit_tool_outputs.tool_calls
-            tool_outputs = []
-            for tool_call in tool_calls:
-                tool_call_id = tool_call.id
-                function_name = tool_call.function.name
-                function_to_call = available_functions[function_name]
-                function_args = json.loads(tool_call.function.arguments)
+            try:
+                required_action = run.required_action
 
-                if function_name != "process_single_transcript":
-                    with st.chat_message("assistant"):
-                        with rd.stdout(to=st.empty(), format="markdown"):
-                            function_response = asyncio.run(
-                                function_to_call(
-                                    **function_args
+                tool_calls = required_action.submit_tool_outputs.tool_calls
+                tool_outputs = []
+                for tool_call in tool_calls:
+                    tool_call_id = tool_call.id
+                    function_name = tool_call.function.name
+                    function_to_call = available_functions[function_name]
+                    function_args = json.loads(tool_call.function.arguments)
+
+                    if function_name != "process_single_transcript":
+                        with st.chat_message("assistant"):
+                            with rd.stdout(to=st.empty(), format="markdown"):
+                                function_response = asyncio.run(
+                                    function_to_call(
+                                        **function_args
+                                    )
                                 )
+
+                                if function_name == "create_clips_for_video":
+                                    new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}',
+                                                                                             function_response)
+                                    new_html_code = process_html_string(new_html_code)
+                                    components.html(new_html_code, height=800)
+
+                        if function_name != "create_clips_for_video":
+                            st.session_state.messages.append({"role": "assistant", "content": function_response})
+                        if function_name == "create_clips_for_video":
+                            new_html_code = deepcopy(html_code_default_pause).replace('{{VIDEOS_JSON}}', function_response)
+                            new_html_code = process_html_string(new_html_code)
+                            st.session_state.messages.append(
+                                {"role": "assistant", "content": new_html_code, "html_code": True})
+                    else:
+                        function_response = function_to_call(
+                                **function_args
                             )
 
-                            if function_name == "create_clips_for_video":
-                                new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}',
-                                                                                         function_response)
-                                new_html_code = process_html_string(new_html_code)
-                                components.html(new_html_code, height=800)
+                    tool_outputs.append({
+                        "tool_call_id": tool_call_id,
+                        "output": function_response
+                    })
 
-                    if function_name != "create_clips_for_video":
-                        st.session_state.messages.append({"role": "assistant", "content": function_response})
-                    if function_name == "create_clips_for_video":
-                        new_html_code = deepcopy(html_code_default_pause).replace('{{VIDEOS_JSON}}', function_response)
-                        new_html_code = process_html_string(new_html_code)
-                        st.session_state.messages.append(
-                            {"role": "assistant", "content": new_html_code, "html_code": True})
-                else:
-                    function_response = function_to_call(
-                            **function_args
-                        )
+                    # Append the results of tool call
+                    results_append_run = client.beta.threads.runs.submit_tool_outputs(
+                        thread_id=st.session_state.thread_id,
+                        run_id=run.id,
+                        tool_outputs=tool_outputs)
 
-                tool_outputs.append({
-                    "tool_call_id": tool_call_id,
-                    "output": function_response
-                })
+                    results_append_run = check_run_status(results_append_run, st.session_state.thread_id)
 
-                # Append the results of tool call
-                results_append_run = client.beta.threads.runs.submit_tool_outputs(
-                    thread_id=st.session_state.thread_id,
-                    run_id=run.id,
-                    tool_outputs=tool_outputs)
-
-                results_append_run = check_run_status(results_append_run, st.session_state.thread_id)
-
-                if function_name == "process_single_transcript":
-                    return_assistant_messages(results_append_run, st.session_state.thread_id)
-
+                    if function_name == "process_single_transcript":
+                        return_assistant_messages(results_append_run, st.session_state.thread_id)
+            except Exception as e:
+                msg = "Oops! Something is wrong with the request please retry."
+                print(msg)
+                st.session_state.messages.append({"role": "assistant", "content": msg})
         else:
             return_assistant_messages(run, st.session_state.thread_id)
 
