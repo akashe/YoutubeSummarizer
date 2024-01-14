@@ -43,11 +43,12 @@ summarize_prompt = {
     "user": "Transcript: {context}"
 }
 
-summarize_prompt_specific_topics = {
+summarize_prompt_specific_terms = {
     "system": "Take a deep breadth. You are a news reporter whose job is to find the key items discussed in a video. "
               "A transcript of a video in a list format. It contains the start time of words expressed and what was  "
               "said in the video. Given the transcript, identify things discussed about the topic(s) {search_terms} during that time."
-              "Just give no more than {bullet_points} the bullet points of most important points and don't generate a summary.",
+              "Just give no more than {bullet_points} the bullet points of topic(s) {search_terms} and don't generate a summary."
+              "If the topic(s) {search_terms} are not discussed, return '-1'",
     "user": "Transcript: {context}"
 }
 
@@ -64,6 +65,21 @@ get_timestamp_prompt = {
               " Don't create ranges with less than 10 second difference between start_time and end_time."
               " Do not create ranges for the timestamps that discuss advertisement, endorsements or paid content information",
     "user": "Transcript: {context} \n Most important points: {summary}"
+}
+
+get_timestamp_prompt_specific_terms = {
+    "system": "Take a deep breadth. You are a very peculiar mind which likes to solve nitty-gritty things with an eye on detail."
+              "Given a timestamped transcript of a youtube video and things discussed about the topic(s) {search_terms} in the video,Your job is "
+              "to suggest a range of timestamps. You have to refer the things discussed about the topic(s) {search_terms} in the video and identify where they are present in the video."
+              "The transcript is a list of dict containing the start time for a phrase or sentence and the phrase or sentence itself."
+              "The timestamp ranges would be used to create clips from the video. The output will exclusively comprise lists of timestamp"
+              " ranges, with each element of the list presented in the following manner: [start_time, end_time]. This format should be strictly adhered to for consistency and clarity."
+              " No explanatory text is needed only the ranges in the above format will suffice."
+              " Your selection process will be meticulous to ensure that viewers get the most informative and comprehensive understanding of the topic(s) {search_terms} from the highlighted segments."
+              " The output list of time stamps should not contain more than {len_range_items} items."
+              " Don't create ranges with less than 10 second difference between start_time and end_time."
+              " Do not create ranges for the timestamps that discuss advertisement, endorsements or paid content information",
+    "user": "Transcript: {context} \n things discussed about the topic(s): {summary}"
 }
 
 
@@ -136,6 +152,7 @@ def parse_captions(text_captions: List[List[dict]],
 
 async def get_time_stamp_ranges(video_ids: List[str],
                                 transcripts: List[List[dict]],
+                                search_terms: List[str] = None,
                                 model_name: str = "gpt-4-1106-preview") -> Dict[str, List[List[float]]]:
     ranges = {}
     for video_id, transcript in zip(video_ids, transcripts):
@@ -148,19 +165,34 @@ async def get_time_stamp_ranges(video_ids: List[str],
         for fixed_duration_transcript in parsed_transcripts:
             # First we create a summary of the video
 
-            prompt_dict = deepcopy(summarize_prompt)
+            if search_terms:
+                terms = " ".join(search_terms)
+                prompt_dict = deepcopy(summarize_prompt_specific_terms)
+                prompt_dict['system'] = prompt_dict['system'].format(bullet_points=n_bullet_points,
+                                                                     search_terms=terms)
+            else:
+                prompt_dict = deepcopy(summarize_prompt)
+                prompt_dict['system'] = prompt_dict['system'].format(bullet_points=n_bullet_points)
             prompt_dict['user'] = prompt_dict['user'].format(context=fixed_duration_transcript)
-            prompt_dict['system'] = prompt_dict['system'].format(bullet_points=n_bullet_points)
             max_tokens = 1024
 
             key_points = await acompletion_with_retry(model_name=model_name,
                                                       prompt_dict=prompt_dict,
                                                       max_tokens=max_tokens,
                                                       stream=False)
+            if key_points == "-1":
+                # topic not discussed in the video
+                return "-1"
 
-            prompt_dict = deepcopy(get_timestamp_prompt)
+            if search_terms:
+                terms = " ".join(search_terms)
+                prompt_dict = deepcopy(get_timestamp_prompt_specific_terms)
+                prompt_dict['system'] = prompt_dict['system'].format(len_range_items=n_len_range_items,
+                                                                     search_terms=terms)
+            else:
+                prompt_dict = deepcopy(get_timestamp_prompt)
+                prompt_dict['system'] = prompt_dict['system'].format(len_range_items=n_len_range_items)
             prompt_dict["user"] = prompt_dict["user"].format(context=fixed_duration_transcript, summary=key_points)
-            prompt_dict['system'] = prompt_dict['system'].format(len_range_items=n_len_range_items)
             max_tokens = 1024
 
             fixed_duration_range_str = await acompletion_with_retry(model_name=model_name,
@@ -175,6 +207,7 @@ async def get_time_stamp_ranges(video_ids: List[str],
 
 
 async def create_clips_for_video(youtube_video_links: List[str],
+                                 search_terms: List[str] = None,
                                  model_name: str = "gpt-4-1106-preview"):
 
     youtube_connect = YoutubeConnect()
@@ -209,10 +242,15 @@ async def create_clips_for_video(youtube_video_links: List[str],
 
     transcripts = get_transcripts(video_ids, video_titles)
     if len(transcripts) == 0:
+        print("\nTranscripts not available\n")
         return "Transcripts not available"
 
     # get time stamp ranges
-    ranges = await get_time_stamp_ranges(video_ids, transcripts, model_name)
+    ranges = await get_time_stamp_ranges(video_ids, transcripts, search_terms, model_name)
+
+    if ranges == "-1":
+        print("\nThe sought topics are not discussed in the video\n")
+        return "The sought topics are not discussed in the video"
 
     # embed html code with those ranges
     ranges_with_video_ids = get_videos_and_ranges(ranges)

@@ -98,6 +98,13 @@ function_definitions = [
                         },
                         "description": "List of youtube video url in string format to process by the function.",
                     },
+                    "search_terms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                        },
+                        "description": "List of search terms in string format to create clips around a specific terms.",
+                    },
                     "model_name": {
                         "type": "string",
                         "description": "The OpenAI model to use to create final summaries."

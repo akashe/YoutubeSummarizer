@@ -69,6 +69,7 @@ async def process_videos(
 
     transcripts = get_transcripts(video_ids, video_titles)
     if len(transcripts) == 0:
+        print("\nTranscripts not available\n")
         return "Transcripts not available"
 
     documents = get_documents(video_ids, video_titles, transcripts, model_name)
