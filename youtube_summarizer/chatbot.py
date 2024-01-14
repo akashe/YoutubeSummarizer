@@ -100,15 +100,6 @@ st.markdown(
 )
 ui_spacer(2)
 
-'''
-with st.expander("Configuration"):
-
-    model_name = "gpt-4-1106-preview"
-    # TODO: if the person has access to this model
-
-    openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
-    "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-'''
 openai_api_key = st.secrets["openai_api_key"]
 
 if openai_api_key and is_valid_openai_api_key(openai_api_key):
