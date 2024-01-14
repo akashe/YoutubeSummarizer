@@ -55,7 +55,7 @@ with st.expander("Configuration"):
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
 '''
 model_name = 'GPT-4-1106-Preview: Precise but costly'.split(":")[0].lower()
-openai_api_key = st.secrets("openai_api_key")
+openai_api_key = st.secrets["openai_api_key"]
 
 with st.form("Analysis"):
     try:
