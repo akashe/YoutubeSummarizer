@@ -58,6 +58,9 @@ available_functions = {
         "process_single_transcript": process_single_transcript
     }
 
+possible_errors = ["The sought topics are not discussed in the video",
+                   "Transcripts not available"]
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -193,7 +196,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                                 )
 
                                 if function_name == "create_clips_for_video" and\
-                                        function_response != "Transcripts not available":
+                                        function_response not in possible_errors:
                                     new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}',
                                                                                              function_response)
                                     new_html_code = process_html_string(new_html_code)
@@ -202,7 +205,10 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                         if function_name != "create_clips_for_video":
                             st.session_state.messages.append({"role": "assistant", "content": function_response})
                         if function_name == "create_clips_for_video" and \
-                                function_response != "Transcripts not available":
+                                function_response in possible_errors:
+                            st.session_state.messages.append({"role": "assistant", "content": function_response})
+                        if function_name == "create_clips_for_video" and \
+                                function_response not in possible_errors:
                             new_html_code = deepcopy(html_code_default_pause).replace('{{VIDEOS_JSON}}',
                                                                                       function_response)
                             new_html_code = process_html_string(new_html_code)
