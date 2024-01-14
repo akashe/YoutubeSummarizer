@@ -63,6 +63,8 @@ async def process_channels(
     assert len(video_titles) == len(latest_video_ids)
 
     transcripts = get_transcripts(latest_video_ids, video_titles)
+    if len(transcripts) == 0:
+        return "Transcripts not available"
 
     documents = get_documents(latest_video_ids, video_titles, transcripts, model_name)
 

@@ -68,6 +68,8 @@ async def process_videos(
         print(f"{id_ + 1}. [{video_title}](https://www.youtube.com/watch?v={video_id})")
 
     transcripts = get_transcripts(video_ids, video_titles)
+    if len(transcripts) == 0:
+        return "Transcripts not available"
 
     documents = get_documents(video_ids, video_titles, transcripts, model_name)
 
