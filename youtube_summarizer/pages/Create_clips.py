@@ -109,11 +109,15 @@ with st.form("Analysis"):
                                "https://youtu.be/pGsbEd6w7PI?si=QyK7UMybPx1_Was2"]
 
             if st.session_state.get('show_player', True):
-                videos_json = asyncio.run(
-                    create_clips_for_video(youtube_video_links=video_links,
-                                           model_name=model_name)
-                )
+                try:
+                    videos_json = asyncio.run(
+                        create_clips_for_video(youtube_video_links=video_links,
+                                               model_name=model_name)
+                    )
 
-                new_html_code = deepcopy(html_code).replace('{{VIDEOS_JSON}}', videos_json)
+                    new_html_code = deepcopy(html_code).replace('{{VIDEOS_JSON}}', videos_json)
 
-                components.html(new_html_code, height=800)
+                    components.html(new_html_code, height=800)
+                except Exception as e:
+                    msg = "Oops! Something is wrong with the request please retry."
+                    print(msg)
