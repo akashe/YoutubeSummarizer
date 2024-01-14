@@ -140,16 +140,11 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
         thread = client.beta.threads.create()
         st.session_state.thread_id = thread.id
 
-    chat_input_placeholder = st.empty()
+    prompt = st.chat_input("Enter prompt")
 
-    prompt = None
-    if not st.session_state.processing:
-        prompt = chat_input_placeholder.chat_input("Enter prompt", key=f"input_{st.session_state.input_key}")
-
-    if prompt:
+    def prompt_processing(prompt):
         st.session_state.processing = True
-        st.session_state.input_key += 1
-        chat_input_placeholder.empty()
+
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -195,10 +190,10 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                                     )
                                 )
 
-                                if function_name == "create_clips_for_video" and\
+                                if function_name == "create_clips_for_video" and \
                                         function_response not in possible_errors:
                                     new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}',
-                                                                                             function_response)
+                                                                                              function_response)
                                     new_html_code = process_html_string(new_html_code)
                                     components.html(new_html_code, height=800)
 
@@ -216,8 +211,8 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                                 {"role": "assistant", "content": new_html_code, "html_code": True})
                     else:
                         function_response = function_to_call(
-                                **function_args
-                            )
+                            **function_args
+                        )
 
                     tool_outputs.append({
                         "tool_call_id": tool_call_id,
@@ -242,8 +237,26 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
             return_assistant_messages(run, st.session_state.thread_id)
 
         st.session_state.processing = False
-        chat_input_placeholder.chat_input("Enter prompt", key=f"input_{st.session_state.input_key}")
-        # TODO: handle openai.BadRequestError: Error code: 400 when you add text message when a run is active
+
+    #####
+    #   is the user enters a prompt while another prompt is running then existing execution stops
+    #   we create a new thread in which processing happens. This looses the context
+    #####
+    if prompt and not st.session_state.processing:
+        prompt_processing(prompt)
+    elif prompt:
+        with st.chat_message("assistant"):
+            msg = "Execution stopped! Please wait till processing is complete.\n\n"\
+                  "Check the 'Running' tab at the top!"
+            st.write(msg)
+
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+
+        thread = client.beta.threads.create()
+        st.session_state.thread_id = thread.id
+
+        prompt_processing(prompt)
+
 
 else:
     st.error("Please enter a valid OpenAI key in the Configuration tab to continue.")
