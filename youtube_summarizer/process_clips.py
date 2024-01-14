@@ -39,7 +39,15 @@ summarize_prompt = {
     "system": "Take a deep breadth. You are a news reporter whose job is to find the key items discussed in a video. "
               "A transcript of a video in a list format. It contains the start time of words expressed and what was  "
               "said in the video. Given the transcript, identify the most important things discussed during that time."
-                "Just give no more than {bullet_points} the bullet points of most important points and don't generate a summary.",
+              "Just give no more than {bullet_points} the bullet points of most important points and don't generate a summary.",
+    "user": "Transcript: {context}"
+}
+
+summarize_prompt_specific_topics = {
+    "system": "Take a deep breadth. You are a news reporter whose job is to find the key items discussed in a video. "
+              "A transcript of a video in a list format. It contains the start time of words expressed and what was  "
+              "said in the video. Given the transcript, identify things discussed about the topic(s) {search_terms} during that time."
+              "Just give no more than {bullet_points} the bullet points of most important points and don't generate a summary.",
     "user": "Transcript: {context}"
 }
 
@@ -53,7 +61,7 @@ get_timestamp_prompt = {
               " No explanatory text is needed only the ranges in the above format will suffice."
               " Your selection process will be meticulous to ensure that viewers get the most informative and comprehensive understanding of the video's content from the highlighted segments."
               " The output list of time stamps should not contain more than {len_range_items} items."
-              " Avoid creating ranges with less than 10 second difference between start_time and end_time."
+              " Don't create ranges with less than 10 second difference between start_time and end_time."
               " Do not create ranges for the timestamps that discuss advertisement, endorsements or paid content information",
     "user": "Transcript: {context} \n Most important points: {summary}"
 }
@@ -200,6 +208,8 @@ async def create_clips_for_video(youtube_video_links: List[str],
         print(f"{id_ + 1}. [{video_title}](https://www.youtube.com/watch?v={video_id})")
 
     transcripts = get_transcripts(video_ids, video_titles)
+    if len(transcripts) == 0:
+        return "Transcripts not available"
 
     # get time stamp ranges
     ranges = await get_time_stamp_ranges(video_ids, transcripts, model_name)
