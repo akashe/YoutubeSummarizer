@@ -4,7 +4,8 @@ function_definitions = [
         "function": {
             "name": "process_videos",
             "description": "Get the summary of one or multiple videos. You get a general summary if no keywords"
-                           "are given. If keywords are given then a summary around those keywords is returned.",
+                           "are given. If keywords are given then a summary around those keywords is returned."
+                           "This function only returns a summary and cant be used to answer questions about a video.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -103,6 +104,29 @@ function_definitions = [
                     },
                 },
                 "required": ["youtube_video_links"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "process_single_transcript",
+            "description": "Given a youtube video url this function returns the english transcript of the video which"
+                           "can be used to answer any question about a video. If the model returns that "
+                           "'Sorry! English transcripts unavailable for the video' then an answer can't be generated ",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "video_url": {
+                        "type": "string",
+                        "description": "The youtube video link for the video whose transcripts are needed."
+                    },
+                    "model_name": {
+                        "type": "string",
+                        "description": "The OpenAI model to use to create final summaries."
+                    },
+                },
+                "required": ["video_url"],
             },
         },
     }
