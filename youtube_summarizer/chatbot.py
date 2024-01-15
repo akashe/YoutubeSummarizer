@@ -70,6 +70,9 @@ if "thread_id" not in st.session_state:
 if 'processing' not in st.session_state:
     st.session_state.processing = False
 
+if 'welcome_message_shown' not in st.session_state:
+    st.session_state.welcome_message_shown = False
+
 
 screen_width = streamlit_js_eval(js_expressions='screen.width',
                                  want_output=True,
@@ -128,15 +131,17 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
         thread = client.beta.threads.create()
         st.session_state.thread_id = thread.id
 
-    with st.chat_message("assistant"):
-        msg = "👋 Welcome to YouTube Buddy!\n\n"\
-              "Try 'Summarize this youtube video for me [url]'\n\n" \
-              "What is the recent India Maldives row discussed in [url] \n\n" \
-              "Can you shorten this podcast and create clips for me around this topic?\n\n" \
-              "Summarize all the videos released by this channel in past 2 weeks\n\n"
-        st.write(msg)
+    if not st.session_state.welcome_message_shown:
+        with st.chat_message("assistant"):
+            msg = "👋 Welcome to YouTube Buddy!\n\n"\
+                  "Try 'Summarize this youtube video for me [url]'\n\n" \
+                  "What is the recent India Maldives row discussed in [url] \n\n" \
+                  "Can you shorten this podcast and create clips for me around this topic?\n\n" \
+                  "Summarize all the videos released by this channel in past 2 weeks\n\n"
+            st.write(msg)
 
-    st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.session_state.welcome_message_shown = True
 
     prompt = st.chat_input("Enter prompt")
 
