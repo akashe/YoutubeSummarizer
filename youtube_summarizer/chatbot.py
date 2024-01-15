@@ -15,6 +15,8 @@ from process_channels import process_channels
 from process_clips import create_clips_for_video
 from process_single_transcript import process_single_transcript
 
+import streamlit.components.v1 as components
+from streamlit_js_eval import streamlit_js_eval
 
 from utils import is_valid_openai_api_key, ui_spacer, process_html_string
 from function_definitions import function_definitions
@@ -24,8 +26,6 @@ with open("youtube_summarizer/html_code_default_play.html","r") as f:
 
 with open("youtube_summarizer/html_code_default_pause.html","r") as f:
     html_code_default_pause = f.read()
-
-import streamlit.components.v1 as components
 
 def check_run_status(run_to_check, thread_id):
     while run_to_check.status == "queued" or run_to_check.status == "in_progress":
@@ -70,9 +70,16 @@ if "thread_id" not in st.session_state:
 if 'processing' not in st.session_state:
     st.session_state.processing = False
 
-if 'input_key' not in st.session_state:
-    st.session_state.input_key = 0
+if "component_dim" not in st.session_state:
+    screen_width = streamlit_js_eval(js_expressions='screen.width', key='SCR')
 
+    if screen_width <= 780:
+        component_dim = 205
+    elif screen_width <= 1024:
+        component_dim = 310
+    else:
+        component_dim = 410
+    st.session_state.component_dim = component_dim
 
 with st.sidebar:
     st.markdown(f"""
@@ -128,7 +135,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                 st.markdown(message["content"])
             else:
                 html = message["content"]
-                components.html(html, height=800)
+                components.html(html, height=st.session_state.component_dim)
 
     if st.session_state.thread_id is None:
         thread = client.beta.threads.create()
@@ -189,7 +196,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                                     new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}',
                                                                                               function_response)
                                     new_html_code = process_html_string(new_html_code)
-                                    components.html(new_html_code, height=800)
+                                    components.html(new_html_code, height=st.session_state.component_dim)
 
                         if function_name != "create_clips_for_video":
                             st.session_state.messages.append({"role": "assistant", "content": function_response})
