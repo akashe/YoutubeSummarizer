@@ -70,16 +70,18 @@ if "thread_id" not in st.session_state:
 if 'processing' not in st.session_state:
     st.session_state.processing = False
 
-if "component_dim" not in st.session_state:
-    screen_width = streamlit_js_eval(js_expressions='screen.width', key='SCR')
 
-    if screen_width <= 780:
-        component_dim = 205
-    elif screen_width <= 1024:
-        component_dim = 310
-    else:
-        component_dim = 410
-    st.session_state.component_dim = component_dim
+screen_width = streamlit_js_eval(js_expressions='screen.width',
+                                 want_output=True,
+                                 key='SCR')
+
+if screen_width <= 780:
+    component_dim = 205
+elif screen_width <= 1024:
+    component_dim = 310
+else:
+    component_dim = 410
+
 
 with st.sidebar:
     st.markdown(f"""
@@ -96,14 +98,10 @@ st.markdown(
     """
     👋 Welcome to YouTube Buddy!
 
-🔗 Enter a valid OpenAI access key.
-
-⭐️ Interact with videos using chat.
+⭐️ Interact with videos using chat and ask questions about them.
 
 💡 Summarize videos, generate short clips from them, get latest videos released by your favourite channels.
-
-🎯 Get the gist quickly and start navigating YouTube smarter, not harder!
-    """
+ """
 )
 ui_spacer(2)
 
@@ -135,7 +133,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                 st.markdown(message["content"])
             else:
                 html = message["content"]
-                components.html(html, height=st.session_state.component_dim)
+                components.html(html, height=component_dim)
 
     if st.session_state.thread_id is None:
         thread = client.beta.threads.create()
@@ -196,7 +194,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                                     new_html_code = deepcopy(html_code_default_play).replace('{{VIDEOS_JSON}}',
                                                                                               function_response)
                                     new_html_code = process_html_string(new_html_code)
-                                    components.html(new_html_code, height=st.session_state.component_dim)
+                                    components.html(new_html_code, height=component_dim)
 
                         if function_name != "create_clips_for_video":
                             st.session_state.messages.append({"role": "assistant", "content": function_response})
