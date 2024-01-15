@@ -94,17 +94,6 @@ st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
 ui_spacer(2)
 
-st.markdown(
-    """
-    👋 Welcome to YouTube Buddy!
-
-⭐️ Interact with videos using chat and ask questions about them.
-
-💡 Summarize videos, generate short clips from them, get latest videos released by your favourite channels.
- """
-)
-ui_spacer(2)
-
 openai_api_key = st.secrets["openai_api_key"]
 
 if openai_api_key and is_valid_openai_api_key(openai_api_key):
@@ -138,6 +127,16 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
     if st.session_state.thread_id is None:
         thread = client.beta.threads.create()
         st.session_state.thread_id = thread.id
+
+    with st.chat_message("assistant"):
+        msg = "👋 Welcome to YouTube Buddy!\n\n"\
+              "Try 'Summarize this youtube video for me [url]'\n\n" \
+              "What is the recent India Maldives row discussed in [url] \n\n" \
+              "Can you shorten this podcast and create clips for me around this topic?\n\n" \
+              "Summarize all the videos released by this channel in past 2 weeks\n\n"
+        st.write(msg)
+
+    st.session_state.messages.append({"role": "assistant", "content": msg})
 
     prompt = st.chat_input("Enter prompt")
 
