@@ -77,8 +77,9 @@ if 'welcome_message_shown' not in st.session_state:
 screen_width = streamlit_js_eval(js_expressions='screen.width',
                                  want_output=True,
                                  key='SCR')
-
-if screen_width <= 780:
+if screen_width is None:
+    component_dim = 410
+elif screen_width <= 780:
     component_dim = 205
 elif screen_width <= 1024:
     component_dim = 310
