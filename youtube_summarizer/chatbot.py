@@ -137,7 +137,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                   "Try 'Summarize this youtube video for me [url]'\n\n" \
                   "What is the recent India Maldives row discussed in [url] \n\n" \
                   "Can you shorten this podcast and create clips for me around this topic?\n\n" \
-                  "Summarize all the videos released by this channel in past 2 weeks\n\n"
+                  "Summarize all the videos released by this channel in past 2 weeks"
             st.write(msg)
 
         st.session_state.messages.append({"role": "assistant", "content": msg})
