@@ -96,7 +96,6 @@ with st.sidebar:
 
 st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
-ui_spacer(2)
 
 openai_api_key = st.secrets["openai_api_key"]
 
