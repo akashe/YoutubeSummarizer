@@ -90,7 +90,7 @@ def get_waypoints_for_video_len(video_total_len_estimate):
     default_bullet_points = 5
 
     # Parse no more than 40 minutes of video content to get good performance from LLM
-    video_len = min(video_total_len_estimate, 60*10*3)
+    video_len = min(video_total_len_estimate, 60*10*4)
     factor = int(video_len/default_limit_per_llm_call)
 
     factor = 1 if factor == 0 else factor
@@ -128,7 +128,7 @@ def parse_captions(text_captions: List[List[dict]],
                    time_limit_per_llm_call: int = 60 * 10):
 
     assert len(text_captions) > 0
-
+    alert_message_given = False
     transcripts = []
     total_seconds_of_conversation = 0
     last_start = 0
@@ -138,6 +138,9 @@ def parse_captions(text_captions: List[List[dict]],
         total_seconds_of_conversation += duration
         # total time should be more than 5 mins and the total time in subtitles also greater than 5 mins
         if total_seconds_of_conversation > time_limit_per_llm_call and (i['start']-last_start) > time_limit_per_llm_call:
+            if not alert_message_given:
+                print("\nProcessing a long video, this may take some time...\n")
+                alert_message_given = True
             yield transcripts
             transcripts = []
             total_seconds_of_conversation = 0
