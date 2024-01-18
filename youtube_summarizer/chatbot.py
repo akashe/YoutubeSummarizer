@@ -96,6 +96,7 @@ with st.sidebar:
 
 st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
+ui_spacer(2)
 
 openai_api_key = st.secrets["openai_api_key"]
 
@@ -136,7 +137,8 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
             msg = "👋 Welcome to YouTube Buddy!\n\n"\
                   "Try 'Summarize this youtube video for me [url]'\n\n" \
                   "What is the recent India Maldives row discussed in [url] \n\n" \
-                  "Can you shorten this podcast and create clips for me around this topic?\n\n"
+                  "Can you shorten this podcast and create clips for me around this topic?\n\n" \
+                  "Summarize all the videos released by this channel in past 2 weeks"
             st.write(msg)
 
         st.session_state.messages.append({"role": "assistant", "content": msg})
@@ -262,3 +264,5 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
 else:
     st.error("Please enter a valid OpenAI key in the Configuration tab to continue.")
+
+ui_spacer(2)
