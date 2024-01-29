@@ -15,16 +15,20 @@ logging.basicConfig(level=logging.INFO)
 
 re_pattern = r'\[\s*(\d+(\.\d+)?)\s*,\s*(\d+(\.\d+)?)\s*\]'
 
+improve_performance_system_prompt = "It is a Monday in October, most productive day of the year. Think step by step." \
+                                    "I will tip you 200$ for every request you answer right. Take a deep breadth." \
+                                    "YOU CAN DO THIS TASK. "
+
 """
 summarize_prompt = {
-    "system": "Take a deep breadth. You are a news reporter whose job is to find the key items discussed in a video. "
+    "system": "You are a news reporter whose job is to find the key items discussed in a video. "
               "A transcript of a video in a list format. It contains the start time of words expressed and what was  "
               "said in the video. Given the transcript, identify the most important things discussed during that time.",
     "user": "Transcript: {context}"
 }
 
 get_timestamp_prompt = {
-    "system": "Take a deep breadth. You are a very peculiar mind which likes to solve nitty-gritty things with an eye on detail."
+    "system": "You are a very peculiar mind which likes to solve nitty-gritty things with an eye on detail."
               "Given a timestamped transcript of a youtube video and the most important points discussed in the video,Your job is "
               "to suggest a range of timestamps. You have to refer the most important points of video and identify where they are present in the video."
               "The transcript is a list of dict containing the start time for a phrase or sentence and the phrase or sentence itself."
@@ -36,7 +40,7 @@ get_timestamp_prompt = {
 }
 """
 summarize_prompt = {
-    "system": "Take a deep breadth. You are a news reporter whose job is to find the key items discussed in a video. "
+    "system": "You are a news reporter whose job is to find the key items discussed in a video. "
               "A transcript of a video in a list format. It contains the start time of words expressed and what was  "
               "said in the video. Given the transcript, identify the most important things discussed during that time."
               "Just give no more than {bullet_points} the bullet points of most important points and don't generate a summary.",
@@ -44,7 +48,7 @@ summarize_prompt = {
 }
 
 summarize_prompt_specific_terms = {
-    "system": "Take a deep breadth. You are a news reporter whose job is to find the key items discussed in a video. "
+    "system": "You are a news reporter whose job is to find the key items discussed in a video. "
               "A transcript of a video in a list format. It contains the start time of words expressed and what was  "
               "said in the video. Given the transcript, identify things discussed about the topic(s) {search_terms} during that time."
               "Just give no more than {bullet_points} the bullet points of topic(s) {search_terms} and don't generate a summary."
@@ -53,7 +57,7 @@ summarize_prompt_specific_terms = {
 }
 
 get_timestamp_prompt = {
-    "system": "Take a deep breadth. You are a very peculiar mind which likes to solve nitty-gritty things with an eye on detail."
+    "system": "You are a very peculiar mind which likes to solve nitty-gritty things with an eye on detail."
               "Given a timestamped transcript of a youtube video and the most important points discussed in the video,Your job is "
               "to suggest a range of timestamps. You have to refer the most important points of video and identify where they are present in the video."
               "The transcript is a list of dict containing the start time for a phrase or sentence and the phrase or sentence itself."
@@ -68,7 +72,7 @@ get_timestamp_prompt = {
 }
 
 get_timestamp_prompt_specific_terms = {
-    "system": "Take a deep breadth. You are a very peculiar mind which likes to solve nitty-gritty things with an eye on detail."
+    "system": "You are a very peculiar mind which likes to solve nitty-gritty things with an eye on detail."
               "Given a timestamped transcript of a youtube video and things discussed about the topic(s) {search_terms} in the video,Your job is "
               "to suggest a range of timestamps. You have to refer the things discussed about the topic(s) {search_terms} in the video and identify where they are present in the video."
               "The transcript is a list of dict containing the start time for a phrase or sentence and the phrase or sentence itself."
@@ -82,6 +86,7 @@ get_timestamp_prompt_specific_terms = {
     "user": "Transcript: {context} \n things discussed about the topic(s): {summary}"
 }
 
+MAX_TIME_PER_LLM_CALL = 60*10*3
 
 def get_waypoints_for_video_len(video_total_len_estimate):
 
@@ -90,10 +95,10 @@ def get_waypoints_for_video_len(video_total_len_estimate):
     default_bullet_points = 5
 
     # Parse no more than 40 minutes of video content to get good performance from LLM
-    video_len = min(video_total_len_estimate, 60*10*4)
-    factor = int(video_len/default_limit_per_llm_call)
-
-    factor = 1 if factor == 0 else factor
+    if video_total_len_estimate > MAX_TIME_PER_LLM_CALL:
+        factor = int(video_total_len_estimate/default_limit_per_llm_call)
+    else:
+        factor = int(video_total_len_estimate/default_limit_per_llm_call) + 1
 
     return factor*default_bullet_points, factor*default_len_range_items, factor*default_limit_per_llm_call
 
@@ -137,9 +142,10 @@ def parse_captions(text_captions: List[List[dict]],
         duration = i['duration']
         total_seconds_of_conversation += duration
         # total time should be more than 5 mins and the total time in subtitles also greater than 5 mins
+        # total_seconds_of_conversation forces the system to gather text for videos which contains less conversation
         if total_seconds_of_conversation > time_limit_per_llm_call and (i['start']-last_start) > time_limit_per_llm_call:
-            if not alert_message_given:
-                print("\nProcessing a long video, this may take some time...\n")
+            if not alert_message_given and time_limit_per_llm_call >= MAX_TIME_PER_LLM_CALL:
+                print("\nProcessing a long video, this may take more than a minute...\n")
                 alert_message_given = True
             yield transcripts
             transcripts = []
@@ -156,12 +162,13 @@ def parse_captions(text_captions: List[List[dict]],
 async def get_time_stamp_ranges(video_ids: List[str],
                                 transcripts: List[List[dict]],
                                 search_terms: List[str] = None,
-                                model_name: str = "gpt-4-1106-preview") -> Dict[str, List[List[float]]]:
+                                model_name: str = "gpt-4-0125-preview") -> Dict[str, List[List[float]]]:
     ranges = {}
     for video_id, transcript in zip(video_ids, transcripts):
 
         video_total_len_estimate = transcript[-1]["start"]
-        n_bullet_points, n_len_range_items, time_limit_per_llm_call = get_waypoints_for_video_len(video_total_len_estimate)
+        n_bullet_points, n_len_range_items, time_limit_per_llm_call = get_waypoints_for_video_len(
+            video_total_len_estimate)
 
         ranges[video_id] = []
         parsed_transcripts = parse_captions(transcript, time_limit_per_llm_call)
@@ -171,11 +178,13 @@ async def get_time_stamp_ranges(video_ids: List[str],
             if search_terms:
                 terms = " ".join(search_terms)
                 prompt_dict = deepcopy(summarize_prompt_specific_terms)
-                prompt_dict['system'] = prompt_dict['system'].format(bullet_points=n_bullet_points,
-                                                                     search_terms=terms)
+                prompt_dict['system'] = improve_performance_system_prompt + prompt_dict['system'].format(
+                    bullet_points=n_bullet_points,
+                    search_terms=terms)
             else:
                 prompt_dict = deepcopy(summarize_prompt)
-                prompt_dict['system'] = prompt_dict['system'].format(bullet_points=n_bullet_points)
+                prompt_dict['system'] = improve_performance_system_prompt + prompt_dict['system'].format(
+                    bullet_points=n_bullet_points)
             prompt_dict['user'] = prompt_dict['user'].format(context=fixed_duration_transcript)
             max_tokens = 1024
 
@@ -183,6 +192,7 @@ async def get_time_stamp_ranges(video_ids: List[str],
                                                       prompt_dict=prompt_dict,
                                                       max_tokens=max_tokens,
                                                       stream=False)
+
             if key_points == "-1":
                 # topic not discussed in the video
                 return "-1"
@@ -190,11 +200,13 @@ async def get_time_stamp_ranges(video_ids: List[str],
             if search_terms:
                 terms = " ".join(search_terms)
                 prompt_dict = deepcopy(get_timestamp_prompt_specific_terms)
-                prompt_dict['system'] = prompt_dict['system'].format(len_range_items=n_len_range_items,
-                                                                     search_terms=terms)
+                prompt_dict['system'] = improve_performance_system_prompt + prompt_dict['system'].format(
+                    len_range_items=n_len_range_items,
+                    search_terms=terms)
             else:
                 prompt_dict = deepcopy(get_timestamp_prompt)
-                prompt_dict['system'] = prompt_dict['system'].format(len_range_items=n_len_range_items)
+                prompt_dict['system'] = improve_performance_system_prompt + prompt_dict['system'].format(
+                    len_range_items=n_len_range_items)
             prompt_dict["user"] = prompt_dict["user"].format(context=fixed_duration_transcript, summary=key_points)
             max_tokens = 1024
 
@@ -202,6 +214,7 @@ async def get_time_stamp_ranges(video_ids: List[str],
                                                                     prompt_dict=prompt_dict,
                                                                     max_tokens=max_tokens,
                                                                     stream=False)
+
 
             fixed_duration_range = ranges_in_float_from_llm_response(fixed_duration_range_str)
             ranges[video_id].extend(fixed_duration_range)
@@ -211,7 +224,7 @@ async def get_time_stamp_ranges(video_ids: List[str],
 
 async def create_clips_for_video(youtube_video_links: List[str],
                                  search_terms: List[str] = None,
-                                 model_name: str = "gpt-4-1106-preview"):
+                                 model_name: str = "gpt-4-0125-preview"):
 
     youtube_connect = YoutubeConnect()
 
