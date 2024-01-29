@@ -116,7 +116,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "using the transcript to answer the question asked. Don't use summary to answer a question, use"
                     "returned transcripts."
                     ,
-        model="gpt-4-1106-preview",
+        model="gpt-4-0125-preview",
         tools=function_definitions
     )
 

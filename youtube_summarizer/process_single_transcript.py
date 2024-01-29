@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def process_single_transcript(video_url: str,
-                              model_name: str = "gpt-4-1106-preview"):
+                              model_name: str = "gpt-4-0125-preview"):
 
     try:
         if "m.youtube" in video_url:
