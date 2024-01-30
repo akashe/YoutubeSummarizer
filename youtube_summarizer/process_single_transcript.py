@@ -20,7 +20,7 @@ def process_single_transcript(video_url: str,
         elif "youtu.be" in video_url:
             video_id = video_url.split("/")[-1].split("?")[0]
         else:
-            video_id = video_url.split("?v=")[1]
+            video_id = video_url.split("?v=")[1].split('&')[0]
     except Exception as e:
         logger.info("Please Enter valid urls")
         print("Please Enter valid urls")

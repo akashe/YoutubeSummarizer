@@ -472,7 +472,7 @@ async def aget_summary_with_keywords(documents: List[Document],
     max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
 
     final_summary = await acompletion_with_retry(model_name=open_ai_model,
-                                                 prompt_dict=combine_document_template,
+                                                 prompt_dict=prompt_dict,
                                                  max_tokens=max_tokens)
     return final_summary
 
