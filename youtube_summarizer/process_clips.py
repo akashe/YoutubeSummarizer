@@ -159,12 +159,13 @@ def parse_captions(text_captions: List[List[dict]],
         yield transcripts
 
 
-async def get_time_stamp_ranges(video_ids: List[str],
+async def get_time_stamp_ranges(video_titles: List[str],
+                                video_ids: List[str],
                                 transcripts: List[List[dict]],
                                 search_terms: List[str] = None,
                                 model_name: str = "gpt-4-0125-preview") -> Dict[str, List[List[float]]]:
     ranges = {}
-    for video_id, transcript in zip(video_ids, transcripts):
+    for video_title, video_id, transcript in zip(video_titles, video_ids, transcripts):
 
         video_total_len_estimate = transcript[-1]["start"]
         n_bullet_points, n_len_range_items, time_limit_per_llm_call = get_waypoints_for_video_len(
@@ -195,7 +196,8 @@ async def get_time_stamp_ranges(video_ids: List[str],
 
             if key_points == "-1":
                 # topic not discussed in the video
-                return "-1"
+                print("\nThe sought topics are not discussed in the video {video_title}\n")
+                continue
 
             if search_terms:
                 terms = " ".join(search_terms)
@@ -236,7 +238,7 @@ async def create_clips_for_video(youtube_video_links: List[str],
             elif "youtu.be" in link:
                 video_id = link.split("/")[-1].split("?")[0]
             else:
-                video_id = link.split("?v=")[1]
+                video_id = link.split("?v=")[1].split('&')[0]
             video_ids.append(video_id)
     except Exception as e:
         print("Enter valid urls")
@@ -261,10 +263,9 @@ async def create_clips_for_video(youtube_video_links: List[str],
         return "Transcripts not available"
 
     # get time stamp ranges
-    ranges = await get_time_stamp_ranges(video_ids, transcripts, search_terms, model_name)
+    ranges = await get_time_stamp_ranges(video_titles, video_ids, transcripts, search_terms, model_name)
 
-    if ranges == "-1":
-        print("\nThe sought topics are not discussed in the video\n")
+    if len(ranges) == 0:
         return "The sought topics are not discussed in the video"
 
     # embed html code with those ranges

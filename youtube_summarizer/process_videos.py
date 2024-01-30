@@ -47,7 +47,7 @@ async def process_videos(
             elif "youtu.be" in link:
                 video_id = link.split("/")[-1].split("?")[0]
             else:
-                video_id = link.split("?v=")[1]
+                video_id = link.split("?v=")[1].split('&')[0]
             video_ids.append(video_id)
     except Exception as e:
         print("Enter valid urls")
