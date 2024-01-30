@@ -51,7 +51,6 @@ summarize_prompt_specific_terms = {
     "system": "You are a news reporter whose job is to find the key items discussed in a video. "
               "A transcript of a video in a list format. It contains the start time of words expressed and what was  "
               "said in the video. Given the transcript, identify things discussed about the topic(s) {search_terms} during that time."
-              "Just give no more than {bullet_points} the bullet points of topic(s) {search_terms} and don't generate a summary."
               "If the topic(s) {search_terms} are not discussed, return '-1'",
     "user": "Transcript: {context}"
 }
@@ -66,7 +65,7 @@ get_timestamp_prompt = {
               " No explanatory text is needed only the ranges in the above format will suffice."
               " Your selection process will be meticulous to ensure that viewers get the most informative and comprehensive understanding of the video's content from the highlighted segments."
               " The output list of time stamps should not contain more than {len_range_items} items."
-              " Don't create ranges with less than 10 second difference between start_time and end_time."
+              " DON'T CREATE RANGES WITH LESS THAN 10 SECOND DIFFERENCE BETWEEN start_time and end_time."
               " Do not create ranges for the timestamps that discuss advertisement, endorsements or paid content information",
     "user": "Transcript: {context} \n Most important points: {summary}"
 }
@@ -81,7 +80,7 @@ get_timestamp_prompt_specific_terms = {
               " No explanatory text is needed only the ranges in the above format will suffice."
               " Your selection process will be meticulous to ensure that viewers get the most informative and comprehensive understanding of the topic(s) {search_terms} from the highlighted segments."
               " The output list of time stamps should not contain more than {len_range_items} items."
-              " Don't create ranges with less than 10 second difference between start_time and end_time."
+              " DON'T CREATE RANGES WITH LESS THAN 10 SECOND DIFFERENCE BETWEEN start_time and end_time."
               " Do not create ranges for the timestamps that discuss advertisement, endorsements or paid content information",
     "user": "Transcript: {context} \n things discussed about the topic(s): {summary}"
 }
@@ -196,7 +195,7 @@ async def get_time_stamp_ranges(video_titles: List[str],
 
             if key_points == "-1":
                 # topic not discussed in the video
-                print("\nThe sought topics are not discussed in the video {video_title}\n")
+                print(f"\nThe sought topics are not discussed in the video {video_title}\n")
                 continue
 
             if search_terms:
