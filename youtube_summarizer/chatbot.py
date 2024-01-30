@@ -109,12 +109,11 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
     assistant = client.beta.assistants.create(
         name="Youtube Assistant",
-        description="You an eager helpful assistant. You job is to simply experience of Youtube for people."
-                    "You can help people in summarizing one or many youtube videos. You can retrieve and summarize"
-                    "latest videos from youtube channel from last 3 weeks. You can help people in answering"
+        description="You an eager helpful assistant. You can help people in answering"
                     "questions they might have about a youtube video by getting the transcript of the video and"
                     "using the transcript to answer the question asked. Don't use summary to answer a question, use"
-                    "returned transcripts."
+                    "returned transcripts. Whenever asked to summarize videos use the inbuilt function to process video"
+                    "and not rely on returned transcripts to generate summaries"
                     ,
         model="gpt-4-0125-preview",
         tools=function_definitions

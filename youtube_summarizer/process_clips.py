@@ -195,7 +195,7 @@ async def get_time_stamp_ranges(video_titles: List[str],
 
             if key_points == "-1":
                 # topic not discussed in the video
-                print(f"\nThe sought topics are not discussed in the video {video_title}\n")
+                print(f"\nThe sought topics are not discussed in the video '{video_title}'\n")
                 continue
 
             if search_terms:
