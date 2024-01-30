@@ -12,6 +12,8 @@ To make matters easier, we introduce to you Youtube Summarizer, a tool designed 
    - Ideal when a video covers multiple topics of interest like "war", "AGI", "Psychology"; the app will produce summaries relevant to each topic.
 3. **Channel Summary**: If you don't have time to watch every video from your favorite channel, use our tool to generate a summary of all videos released in the past few weeks across multiple channels. A handy way to stay updated with what’s interesting.
 4. **Keyword Specific Channel Summary**: Tailor your channel summary based on specific topics of interest. For instance, if you are interested in "market fluctuation", get a precise summary of videos discussing this topic over the past weeks. Save your time and benefit from focused viewing.
+5. **Ask question about video**: Want to understand topics mentioned in the video, just ask the bot to answer it for you.
+6. **Create clips**: Create smaller video clips from video for general summary of the video or you can ask to create clips for specific topics also.
 
 ### Obtain your OpenAI API key
 This application uses OpenAI models. To use the app, you need an API key.
@@ -24,7 +26,8 @@ Click [here](https://www.maisieai.com/help/how-to-get-an-openai-api-key-for-chat
 The summarization quality is significantly influenced by the Language Learning Model (LLM) choice:
 
 - GPT3.5 provides you with fast but succinct information. 
-- For a more comprehensive and detailed summary, resort to GPT-4. However, consider slower processing due to usage rate limits. 
+- For a more comprehensive and detailed summary, resort to GPT-4. 
+- Chatbot by default uses latest GPT-4 variant.
 
 ### Steps to Run the App Locally
 
@@ -45,3 +48,4 @@ Running the app locally involves the following steps:
 - **process_videos**: Use this entry point to process a single or multiple videos, employing or ignoring keywords.
 - **process_channels**: Use this to process single or multiple channels with or without search terms.
 - **process_a_playlist**: This entry point processes all the videos in a selected playlist.
+- **process_clips**: This entry point creates clips for one or multiple videos.
