@@ -233,7 +233,7 @@ async def create_clips_for_video(youtube_video_links: List[str],
         video_ids = []
         for link in youtube_video_links:
             if "m.youtube" in link:
-                video_id = link.split("&v=")[-1].split("&")[0]
+                video_id = link.split("?v=")[-1].split("&")[0]
             elif "youtu.be" in link:
                 video_id = link.split("/")[-1].split("?")[0]
             else:
