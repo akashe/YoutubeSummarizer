@@ -16,7 +16,7 @@ def process_single_transcript(video_url: str,
 
     try:
         if "m.youtube" in video_url:
-            video_id = link.split("&v=")[-1].split("&")[0]
+            video_id = link.split("?v=")[-1].split("&")[0]
         elif "youtu.be" in video_url:
             video_id = video_url.split("/")[-1].split("?")[0]
         else:
