@@ -19,7 +19,7 @@ import tiktoken
 import logging
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 def get_model_max_len(model_name:str) -> int:

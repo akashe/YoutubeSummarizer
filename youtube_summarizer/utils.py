@@ -9,7 +9,7 @@ from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvai
 
 import logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 def get_adjusted_iso_date_time(summary_of_n_weeks: int) -> str:

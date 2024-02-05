@@ -8,7 +8,7 @@ from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvai
 from get_chain import get_model_max_len
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 def process_single_transcript(video_url: str,
@@ -16,7 +16,7 @@ def process_single_transcript(video_url: str,
 
     try:
         if "m.youtube" in video_url:
-            video_id = link.split("?v=")[-1].split("&")[0]
+            video_id = link.split("v=")[-1].split("&")[0]
         elif "youtu.be" in video_url:
             video_id = video_url.split("/")[-1].split("?")[0]
         else:
