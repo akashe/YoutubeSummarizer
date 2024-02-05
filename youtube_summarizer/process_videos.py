@@ -17,7 +17,7 @@ from get_chain import get_summary_of_each_video, \
 
 import logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 from openai_prompts import get_per_document_with_keyword_prompt_template, \
     get_combine_document_prompt_template, \
@@ -43,7 +43,7 @@ async def process_videos(
         video_ids = []
         for link in youtube_video_links:
             if "m.youtube" in link:
-                video_id = link.split("?v=")[-1].split("&")[0]
+                video_id = link.split("v=")[-1].split("&")[0]
             elif "youtu.be" in link:
                 video_id = link.split("/")[-1].split("?")[0]
             else:

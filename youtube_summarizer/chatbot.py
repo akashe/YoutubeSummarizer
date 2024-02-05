@@ -10,6 +10,10 @@ import time
 import os
 from copy import deepcopy
 
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+
 from process_videos import process_videos
 from process_channels import process_channels
 from process_clips import create_clips_for_video
@@ -100,6 +104,7 @@ ui_spacer(2)
 
 openai_api_key = st.secrets["openai_api_key"]
 
+
 if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
     os.environ["OPENAI_API_KEY"]=openai_api_key
@@ -173,17 +178,17 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
         if run.status == "requires_action":
 
-            try:
-                required_action = run.required_action
+            required_action = run.required_action
 
-                tool_calls = required_action.submit_tool_outputs.tool_calls
-                tool_outputs = []
-                for tool_call in tool_calls:
-                    tool_call_id = tool_call.id
-                    function_name = tool_call.function.name
-                    function_to_call = available_functions[function_name]
-                    function_args = json.loads(tool_call.function.arguments)
+            tool_calls = required_action.submit_tool_outputs.tool_calls
+            tool_outputs = []
+            for tool_call in tool_calls:
+                tool_call_id = tool_call.id
+                function_name = tool_call.function.name
+                function_to_call = available_functions[function_name]
+                function_args = json.loads(tool_call.function.arguments)
 
+                try:
                     if function_name != "process_single_transcript":
                         with st.chat_message("assistant"):
                             with rd.stdout(to=st.empty(), format="markdown"):
@@ -216,26 +221,29 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                         function_response = function_to_call(
                             **function_args
                         )
+                except Exception as e:
+                    logger.info(e)
+                    function_response = "Oops! Something is wrong with the request please retry."
+                    with st.chat_message("assistant"):
+                        with rd.stdout(to=st.empty(), format="markdown"):
+                            print(function_response)
+                    st.session_state.messages.append({"role": "assistant", "content": function_response})
 
-                    tool_outputs.append({
-                        "tool_call_id": tool_call_id,
-                        "output": function_response
-                    })
+                tool_outputs.append({
+                    "tool_call_id": tool_call_id,
+                    "output": function_response
+                })
 
-                    # Append the results of tool call
-                    results_append_run = client.beta.threads.runs.submit_tool_outputs(
-                        thread_id=st.session_state.thread_id,
-                        run_id=run.id,
-                        tool_outputs=tool_outputs)
+                # Append the results of tool call
+                results_append_run = client.beta.threads.runs.submit_tool_outputs(
+                    thread_id=st.session_state.thread_id,
+                    run_id=run.id,
+                    tool_outputs=tool_outputs)
 
-                    results_append_run = check_run_status(results_append_run, st.session_state.thread_id)
+                results_append_run = check_run_status(results_append_run, st.session_state.thread_id)
 
-                    if function_name == "process_single_transcript":
-                        return_assistant_messages(results_append_run, st.session_state.thread_id)
-            except Exception as e:
-                msg = "Oops! Something is wrong with the request please retry."
-                print(msg)
-                st.session_state.messages.append({"role": "assistant", "content": msg})
+                if function_name == "process_single_transcript":
+                    return_assistant_messages(results_append_run, st.session_state.thread_id)
         else:
             return_assistant_messages(run, st.session_state.thread_id)
 
@@ -246,8 +254,10 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
     #   we create a new thread in which processing happens. This looses the context
     #####
     if prompt and not st.session_state.processing:
+        logger.info(prompt)
         prompt_processing(prompt)
     elif prompt:
+        logger.info(prompt)
         with st.chat_message("assistant"):
             msg = "Execution stopped! Please wait till processing is complete.\n\n"\
                   "Check the 'Running' tab at the top!"

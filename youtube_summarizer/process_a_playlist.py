@@ -11,7 +11,7 @@ from get_chain import aget_summary_of_each_video, get_documents, aget_summary_wi
 
 import logging
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 from openai_prompts import get_per_document_with_keyword_prompt_template,\
     get_combine_document_prompt_template,\
