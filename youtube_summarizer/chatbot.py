@@ -104,7 +104,6 @@ ui_spacer(2)
 
 openai_api_key = st.secrets["openai_api_key"]
 
-
 if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
     os.environ["OPENAI_API_KEY"]=openai_api_key
@@ -177,7 +176,6 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                 st.markdown("I think my servers are having a fever. Can you retry again?")
 
         if run.status == "requires_action":
-
             required_action = run.required_action
 
             tool_calls = required_action.submit_tool_outputs.tool_calls

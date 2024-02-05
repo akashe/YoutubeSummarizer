@@ -27,10 +27,6 @@ function_definitions = [
                         "type": "boolean",
                         "description": "Boolean value to return the source video ids in the final summaries",
                     },
-                    "model_name": {
-                        "type": "string",
-                        "description": "The OpenAI model to use to create final summaries."
-                    },
                 },
                 "required": ["youtube_video_links"],
             },
@@ -71,10 +67,6 @@ function_definitions = [
                         "type": "boolean",
                         "description": "Boolean value to return the source video ids in the final summaries",
                     },
-                    "model_name": {
-                        "type": "string",
-                        "description": "The OpenAI model to use to create final summaries."
-                    },
                 },
                 "required": ["youtube_channel_links"],
             },
@@ -105,10 +97,6 @@ function_definitions = [
                         },
                         "description": "List of search terms in string format to create clips around a specific terms.",
                     },
-                    "model_name": {
-                        "type": "string",
-                        "description": "The OpenAI model to use to create final summaries."
-                    },
                 },
                 "required": ["youtube_video_links"],
             },
@@ -127,10 +115,6 @@ function_definitions = [
                     "video_url": {
                         "type": "string",
                         "description": "The youtube video link for the video whose transcripts are needed."
-                    },
-                    "model_name": {
-                        "type": "string",
-                        "description": "The OpenAI model to use to create final summaries."
                     },
                 },
                 "required": ["video_url"],
