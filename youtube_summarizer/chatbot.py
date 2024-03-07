@@ -51,7 +51,7 @@ def return_assistant_messages(run_to_check, thread_id):
             content = m.content[0].text.value
             with st.chat_message("assistant"):
                 st.markdown(content)
-
+            logger.info(content)
             st.session_state.messages.append({"role": "assistant", "content": content})
 
 
@@ -185,7 +185,6 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                 function_name = tool_call.function.name
                 function_to_call = available_functions[function_name]
                 function_args = json.loads(tool_call.function.arguments)
-
                 try:
                     if function_name != "process_single_transcript":
                         with st.chat_message("assistant"):
@@ -231,7 +230,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "tool_call_id": tool_call_id,
                     "output": function_response
                 })
-
+                logger.info(function_response)
                 # Append the results of tool call
                 results_append_run = client.beta.threads.runs.submit_tool_outputs(
                     thread_id=st.session_state.thread_id,
