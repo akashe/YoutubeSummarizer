@@ -38,7 +38,7 @@ st.markdown(
 )
 ui_spacer(2)
 
-model_name = 'gpt-4-0125-preview: Precise but costly'.split(":")[0].lower()
+model_name = 'gpt-4-1106-preview: Precise but costly'.split(":")[0].lower()
 openai_api_key = st.secrets["openai_api_key"]
 
 with st.form("YoutubeSummary"):

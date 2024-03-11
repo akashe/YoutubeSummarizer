@@ -26,7 +26,7 @@ async def process_channels(
     summary_of_n_weeks: int = 1,
     search_terms: List[str] = None,
     get_source: bool = False,
-    model_name: str = "gpt-4-0125-preview"
+    model_name: str = "gpt-4-1106-preview"
 ) -> str:
 
     latest_video_ids = []
