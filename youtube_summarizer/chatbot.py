@@ -119,7 +119,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "returned transcripts. Whenever asked to summarize videos use the inbuilt function to process video"
                     "and not rely on returned transcripts to generate summaries"
                     ,
-        model="gpt-4-0125-preview",
+        model="gpt-4-1106-preview",
         tools=function_definitions
     )
 

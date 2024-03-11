@@ -162,7 +162,7 @@ async def get_time_stamp_ranges(video_titles: List[str],
                                 video_ids: List[str],
                                 transcripts: List[List[dict]],
                                 search_terms: List[str] = None,
-                                model_name: str = "gpt-4-0125-preview") -> Dict[str, List[List[float]]]:
+                                model_name: str = "gpt-4-1106-preview") -> Dict[str, List[List[float]]]:
     ranges = {}
     for video_title, video_id, transcript in zip(video_titles, video_ids, transcripts):
 
@@ -225,7 +225,7 @@ async def get_time_stamp_ranges(video_titles: List[str],
 
 async def create_clips_for_video(youtube_video_links: List[str],
                                  search_terms: List[str] = None,
-                                 model_name: str = "gpt-4-0125-preview"):
+                                 model_name: str = "gpt-4-1106-preview"):
 
     youtube_connect = YoutubeConnect()
 
