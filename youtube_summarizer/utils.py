@@ -4,6 +4,7 @@ from typing import List
 import openai
 import streamlit as st
 
+
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
 
@@ -213,3 +214,34 @@ window.onresize = function() {{
 }};
 </script>
 """
+
+
+def get_usage_in_dollars(input_tokens, output_tokens):
+    input_tokens_cost = input_tokens*10/1000000
+    output_tokens_cost = output_tokens*30/1000000
+
+    return input_tokens_cost + output_tokens_cost
+
+
+def get_refresh_time():
+    now = datetime.now()
+
+    start_of_next_day = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    time_to_wait = start_of_next_day - now
+
+    hours, remainder = divmod(time_to_wait.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    return f"{hours} hours, {minutes} minutes"
+
+
+chars_processed_dict_for_failed_cases_with_some_processing = {
+    "input_chars": 1024,
+    "output_chars": 0
+}
+
+chars_processed_dict_for_failed_cases_with_no_processing = {
+    "input_chars": 0,
+    "output_chars": 0
+}

@@ -39,7 +39,10 @@ st.markdown(
 ui_spacer(2)
 
 model_name = 'gpt-4-1106-preview: Precise but costly'.split(":")[0].lower()
-openai_api_key = st.secrets["openai_api_key"]
+
+with st.expander("Configuration"):
+    openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
+    "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
 
 with st.form("YoutubeSummary"):
     try:
@@ -99,7 +102,7 @@ with st.form("YoutubeSummary"):
                                         "https://www.youtube.com/@hubermanlab"]
                     last_n_weeks = 3
 
-                _ = asyncio.run(
+                _, _ = asyncio.run(
                     process_channels(youtube_channels,
                                      last_n_weeks,
                                      search_terms,

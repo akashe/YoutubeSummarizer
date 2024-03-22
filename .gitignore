@@ -3,6 +3,7 @@ token.json
 
 .idea/*
 test.py
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

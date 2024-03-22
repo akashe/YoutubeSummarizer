@@ -10,6 +10,8 @@ from get_chain import get_model_max_len
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
+from utils import chars_processed_dict_for_failed_cases_with_no_processing
+
 
 def process_single_transcript(video_url: str,
                               model_name: str = "gpt-4-1106-preview"):
@@ -22,9 +24,10 @@ def process_single_transcript(video_url: str,
         else:
             video_id = video_url.split("?v=")[1].split('&')[0]
     except Exception as e:
-        logger.info("Please Enter valid urls")
-        print("Please Enter valid urls")
-        return "-1"
+        msg = "Enter valid urls"
+        print(msg)
+        logger.error(msg)
+        return chars_processed_dict_for_failed_cases_with_no_processing, msg
 
     json_transcript = "Sorry! English transcripts unavailable for the video"
     try:
@@ -35,6 +38,7 @@ def process_single_transcript(video_url: str,
         print(f'English transcripts unavailable for the video')
     finally:
 
+        input_chars_processed = 0
         if isinstance(json_transcript, list):
             text = [d['text'] for d in json_transcript]
             json_transcript = " ".join(text)
@@ -54,4 +58,15 @@ def process_single_transcript(video_url: str,
 
                 json_transcript = enc.decode(tokens[:model_max_token_len])
 
-        return json_transcript
+            input_chars_processed += len(json_transcript)
+
+        # This will be an estimation of chars processed because we only count length of total characters sent as input
+        # when this function is called, Assistant will use the result of this and answer directly. So the lenght of
+        # chars of output from the assistant isn't included. We would take a random guess and set the length of answer
+        # from Assistant as 512.
+        total_char_len_processed = {
+            "input_chars": input_chars_processed,
+            "output_chars": 512
+        }
+
+        return total_char_len_processed, json_transcript

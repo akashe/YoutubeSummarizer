@@ -10,6 +10,9 @@ from typing import List, Dict
 
 import logging
 
+from utils import chars_processed_dict_for_failed_cases_with_some_processing, \
+    chars_processed_dict_for_failed_cases_with_no_processing
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -162,7 +165,9 @@ async def get_time_stamp_ranges(video_titles: List[str],
                                 video_ids: List[str],
                                 transcripts: List[List[dict]],
                                 search_terms: List[str] = None,
-                                model_name: str = "gpt-4-1106-preview") -> Dict[str, List[List[float]]]:
+                                model_name: str = "gpt-4-1106-preview") -> (dict, Dict[str, List[List[float]]]):
+    input_char_len_processed = 0
+    output_char_len_processed = 0
     ranges = {}
     for video_title, video_id, transcript in zip(video_titles, video_ids, transcripts):
 
@@ -188,7 +193,7 @@ async def get_time_stamp_ranges(video_titles: List[str],
             prompt_dict['user'] = prompt_dict['user'].format(context=fixed_duration_transcript)
             max_tokens = 1024
 
-            key_points = await acompletion_with_retry(model_name=model_name,
+            chars_processed_for_bulled_points, key_points = await acompletion_with_retry(model_name=model_name,
                                                       prompt_dict=prompt_dict,
                                                       max_tokens=max_tokens,
                                                       stream=False)
@@ -211,16 +216,24 @@ async def get_time_stamp_ranges(video_titles: List[str],
             prompt_dict["user"] = prompt_dict["user"].format(context=fixed_duration_transcript, summary=key_points)
             max_tokens = 1024
 
-            fixed_duration_range_str = await acompletion_with_retry(model_name=model_name,
+            chars_processed_for_ranges, fixed_duration_range_str = await acompletion_with_retry(model_name=model_name,
                                                                     prompt_dict=prompt_dict,
                                                                     max_tokens=max_tokens,
                                                                     stream=False)
 
-
             fixed_duration_range = ranges_in_float_from_llm_response(fixed_duration_range_str)
             ranges[video_id].extend(fixed_duration_range)
 
-    return ranges
+            input_char_len_processed += (chars_processed_for_bulled_points["input_chars"] +
+                                         chars_processed_for_ranges["input_chars"])
+            output_char_len_processed += (chars_processed_for_bulled_points["output_chars"] +
+                                          chars_processed_for_ranges["output_chars"])
+
+    total_char_len_processed = {
+        "input_chars": input_char_len_processed,
+        "output_chars": output_char_len_processed
+    }
+    return total_char_len_processed, ranges
 
 
 async def create_clips_for_video(youtube_video_links: List[str],
@@ -240,8 +253,10 @@ async def create_clips_for_video(youtube_video_links: List[str],
                 video_id = link.split("?v=")[1].split('&')[0]
             video_ids.append(video_id)
     except Exception as e:
-        print("Enter valid urls")
-        return "-1"
+        msg = "Enter valid urls"
+        print(msg)
+        logger.error(msg)
+        return chars_processed_dict_for_failed_cases_with_no_processing, msg
 
     logger.info(f"Analyzing {len(video_ids)} videos")
     print("\n")
@@ -259,13 +274,15 @@ async def create_clips_for_video(youtube_video_links: List[str],
 
     transcripts = get_transcripts(video_ids, video_titles)
     if len(transcripts) == 0:
-        return "Transcripts not available"
+        logger.error("Transcripts not available")
+        return chars_processed_dict_for_failed_cases_with_no_processing, "Transcripts not available"
 
     # get time stamp ranges
-    ranges = await get_time_stamp_ranges(video_titles, video_ids, transcripts, search_terms, model_name)
+    chars_processed, ranges = await get_time_stamp_ranges(video_titles, video_ids, transcripts, search_terms, model_name)
 
     if len(ranges) == 0:
-        return "The sought topics are not discussed in the video"
+        logger.error("The sought topics are not discussed in the video")
+        return chars_processed, "The sought topics are not discussed in the video"
 
     # embed html code with those ranges
     ranges_with_video_ids = get_videos_and_ranges(ranges)
@@ -273,5 +290,5 @@ async def create_clips_for_video(youtube_video_links: List[str],
     # return the video ranges
     videos_json = json.dumps(ranges_with_video_ids)
 
-    return videos_json
+    return chars_processed, videos_json
 
