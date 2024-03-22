@@ -96,6 +96,7 @@ async def process_videos(
             per_document_template = get_per_document_prompt_template(model_name)
             chars_processed, result = await aget_summary_of_each_video(documents, per_document_template, model_name)
     except Exception as e:
+        logger.error(e)
         msg = "Something bad happened with the request. Please retry :)"
         print(msg)
         return chars_processed_dict_for_failed_cases_with_some_processing, msg

@@ -12,6 +12,7 @@ from utils import get_adjusted_iso_date_time, check_supported_models, get_transc
 from get_chain import aget_summary_of_each_video, get_documents, aget_summary_with_keywords
 
 import logging
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -21,21 +22,22 @@ from openai_prompts import get_per_document_with_keyword_prompt_template, \
     get_combine_document_with_source_prompt_template
 
 
-#["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
-#["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
+# ["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
+# ["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
 async def process_channels(
-    youtube_channel_links: List[str] = ["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"],
-    summary_of_n_weeks: int = 1,
-    search_terms: List[str] = None,
-    get_source: bool = False,
-    model_name: str = "gpt-4-1106-preview"
+        youtube_channel_links: List[str] = ["https://www.youtube.com/@BeerBiceps",
+                                            "https://www.youtube.com/@hubermanlab",
+                                            "https://www.youtube.com/@MachineLearningStreetTalk"],
+        summary_of_n_weeks: int = 1,
+        search_terms: List[str] = None,
+        get_source: bool = False,
+        model_name: str = "gpt-4-1106-preview"
 ) -> (dict, str):
-
     latest_video_ids = []
     youtube_connect = YoutubeConnect()
 
     for youtube_channel_link in youtube_channel_links:
-        #TODO: add method using undername
+        # TODO: add method using undername
         channel_id = youtube_connect.get_channel_id_from_channel_link(youtube_channel_link)
         logger.info(f"Found channel id {channel_id} for the youtube channel at {youtube_channel_link}")
 
@@ -61,7 +63,7 @@ async def process_channels(
     for id, video_id in enumerate(latest_video_ids):
         video_title = youtube_connect.get_video_title(video_id)
         video_titles.append(video_title)
-        print(f"{id+1}. [{video_title}](https://www.youtube.com/watch?v={video_id})")
+        print(f"{id + 1}. [{video_title}](https://www.youtube.com/watch?v={video_id})")
 
     assert len(video_titles) == len(latest_video_ids)
 
@@ -79,16 +81,17 @@ async def process_channels(
                 else get_combine_document_prompt_template(model_name)
 
             chars_processed, result = await aget_summary_with_keywords(documents,
-                                                      search_terms,
-                                                      per_document_template,
-                                                      combine_document_template,
-                                                      model_name,
-                                                      len(latest_video_ids))
+                                                                       search_terms,
+                                                                       per_document_template,
+                                                                       combine_document_template,
+                                                                       model_name,
+                                                                       len(latest_video_ids))
         else:
             per_document_template = get_per_document_prompt_template(model_name)
             chars_processed, result = await aget_summary_of_each_video(documents, per_document_template, model_name)
 
     except Exception as e:
+        logger.error(e)
         msg = "Something bad happened with the request. Please retry :)"
         print(msg)
         return chars_processed_dict_for_failed_cases_with_some_processing, msg
@@ -118,4 +121,3 @@ if __name__ == "__main__":
     asyncio.run(
         process_channels(args.youtube_channel_links, args.summary_of_n_weeks, args.search_terms, args.return_sources)
     )
-
