@@ -6,7 +6,9 @@ import openai
 
 from youtube.get_information import YoutubeConnect
 
-from utils import get_adjusted_iso_date_time, check_supported_models, get_transcripts, http_connection_decorator
+from utils import get_adjusted_iso_date_time, check_supported_models, get_transcripts, \
+    chars_processed_dict_for_failed_cases_with_some_processing, \
+    chars_processed_dict_for_failed_cases_with_no_processing
 from get_chain import aget_summary_of_each_video, get_documents, aget_summary_with_keywords
 
 import logging
@@ -27,7 +29,7 @@ async def process_channels(
     search_terms: List[str] = None,
     get_source: bool = False,
     model_name: str = "gpt-4-1106-preview"
-) -> str:
+) -> (dict, str):
 
     latest_video_ids = []
     youtube_connect = YoutubeConnect()
@@ -46,8 +48,9 @@ async def process_channels(
     logger.info(f"Analyzing a total of {len(latest_video_ids)} videos")
     print("\n")
     if len(latest_video_ids) == 0:
-        print(f"No videos uploaded in the last {summary_of_n_weeks} week")
-        return "-1"
+        msg = f"No videos uploaded in the last {summary_of_n_weeks} week"
+        print(msg)
+        return chars_processed_dict_for_failed_cases_with_no_processing, msg
     elif len(latest_video_ids) > 1:
         print(f"Analyzing a total of {len(latest_video_ids)} videos")
     else:
@@ -64,7 +67,7 @@ async def process_channels(
 
     transcripts = get_transcripts(latest_video_ids, video_titles)
     if len(transcripts) == 0:
-        return "Transcripts not available"
+        return chars_processed_dict_for_failed_cases_with_no_processing, "Transcripts not available"
 
     documents = get_documents(latest_video_ids, video_titles, transcripts, model_name)
 
@@ -75,7 +78,7 @@ async def process_channels(
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
 
-            result = await aget_summary_with_keywords(documents,
+            chars_processed, result = await aget_summary_with_keywords(documents,
                                                       search_terms,
                                                       per_document_template,
                                                       combine_document_template,
@@ -83,13 +86,14 @@ async def process_channels(
                                                       len(latest_video_ids))
         else:
             per_document_template = get_per_document_prompt_template(model_name)
-            result = await aget_summary_of_each_video(documents, per_document_template, model_name)
+            chars_processed, result = await aget_summary_of_each_video(documents, per_document_template, model_name)
 
     except Exception as e:
-        print("Something bad happened with the request. Please retry :)")
-        return "-1"
+        msg = "Something bad happened with the request. Please retry :)"
+        print(msg)
+        return chars_processed_dict_for_failed_cases_with_some_processing, msg
 
-    return result
+    return chars_processed, result
 
 
 if __name__ == "__main__":

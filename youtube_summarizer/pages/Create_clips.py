@@ -44,7 +44,10 @@ st.markdown(
 ui_spacer(2)
 
 model_name = 'gpt-4-1106-preview: Precise but costly'.split(":")[0].lower()
-openai_api_key = st.secrets["openai_api_key"]
+
+with st.expander("Configuration"):
+    openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
+    "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
 
 with st.form("Analysis"):
     try:
@@ -103,7 +106,7 @@ with st.form("Analysis"):
 
             if st.session_state.get('show_player', True):
                 try:
-                    videos_json = asyncio.run(
+                    _, videos_json = asyncio.run(
                         create_clips_for_video(youtube_video_links=video_links,
                                                model_name=model_name)
                     )

@@ -254,7 +254,7 @@ async def aget_response_from_llm(model_name: str,
                                  prompt_dict: dict,
                                  max_tokens: int,
                                  stream: bool = True
-                                 ) -> str:
+                                 ) -> (dict, str):
     """
     Async call function for accessing OpenAI completion endpoints.
 
@@ -304,7 +304,12 @@ async def aget_response_from_llm(model_name: str,
 
         output = "".join(collected_response)
 
-    return output
+    total_chars_processed = {
+        "input_chars": len(prompt_dict["system"]) + len(prompt_dict["user"]),
+        "output_chars": len(output)
+    }
+
+    return total_chars_processed, output
 
 
 def get_summary_with_keywords(documents: List[Document],
@@ -398,7 +403,7 @@ async def aget_summary_with_keywords(documents: List[Document],
                                      per_document_template: dict,
                                      combine_document_template: dict,
                                      open_ai_model: str,
-                                     total_videos: int) -> str:
+                                     total_videos: int) -> (dict, str):
 
     """
     Async method to generate summary around fixed keywords.
@@ -415,7 +420,8 @@ async def aget_summary_with_keywords(documents: List[Document],
     """
 
     summary_keywords = ", ".join(keywords)
-
+    input_char_len_processed = 0
+    output_char_len_processed = 0
     smaller_summaries = []
     for i, d in enumerate(documents):
         logger.info(f'Summary {i}:\n')
@@ -433,11 +439,13 @@ async def aget_summary_with_keywords(documents: List[Document],
         prompt_dict = get_updated_prompts(per_document_template, d.page_content, summary_keywords)
         max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
 
-        d_summary = await acompletion_with_retry(model_name=open_ai_model,
+        char_len_processed, d_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=prompt_dict,
                                                  max_tokens=max_tokens)
 
         smaller_summaries.append((source_doc, d_summary))
+        input_char_len_processed += char_len_processed["input_chars"]
+        output_char_len_processed += char_len_processed["output_chars"]
 
     big_summary = ""
     for source, summary in smaller_summaries:
@@ -461,20 +469,31 @@ async def aget_summary_with_keywords(documents: List[Document],
             prompt_dict = get_updated_prompts(combine_document_template, smaller_summary, summary_keywords)
             max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
 
-            smaller_chunks += await acompletion_with_retry(model_name=open_ai_model,
+            char_len_processed, smaller_chunk = await acompletion_with_retry(model_name=open_ai_model,
                                                            prompt_dict=prompt_dict,
                                                            max_tokens=max_tokens,
                                                            stream=False)
+            smaller_chunks += smaller_chunk
+            input_char_len_processed += char_len_processed["input_chars"]
+            output_char_len_processed += char_len_processed["output_chars"]
 
         summaries = divide_big_summary_into_parts(smaller_chunks, open_ai_model)
 
     prompt_dict = get_updated_prompts(combine_document_template, summaries[0], summary_keywords)
     max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
 
-    final_summary = await acompletion_with_retry(model_name=open_ai_model,
+    char_len_processed, final_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=prompt_dict,
                                                  max_tokens=max_tokens)
-    return final_summary
+    input_char_len_processed += char_len_processed["input_chars"]
+    output_char_len_processed += char_len_processed["output_chars"]
+
+    total_char_len_processed = {
+        "input_chars": input_char_len_processed,
+        "output_chars": output_char_len_processed
+    }
+
+    return total_char_len_processed, final_summary
 
 
 def get_summary_of_each_video(documents: List[Document],
@@ -522,7 +541,7 @@ def get_summary_of_each_video(documents: List[Document],
 
 async def aget_summary_of_each_video(documents: List[Document],
                                      per_document_template: dict,
-                                     open_ai_model: str) -> str:
+                                     open_ai_model: str) -> (dict, str):
     """
     Async method to return a summary of each video separately. This function returns a
     general summary and does not create a summary around specific keywords.
@@ -534,6 +553,8 @@ async def aget_summary_of_each_video(documents: List[Document],
     :return: the result summary
     """
 
+    input_char_len_processed = 0
+    output_char_len_processed = 0
     summary = ""
     for i, d in enumerate(documents):
         logger.info(f'Summary {i}:\n')
@@ -548,7 +569,7 @@ async def aget_summary_of_each_video(documents: List[Document],
         prompt_dict = get_updated_prompts(per_document_template, d.page_content)
         max_tokens = get_max_tokens(prompt_dict["system"] + prompt_dict["user"], open_ai_model)
 
-        d_summary = await acompletion_with_retry(model_name=open_ai_model,
+        char_len_processed, d_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=prompt_dict,
                                                  max_tokens=max_tokens)
 
@@ -558,4 +579,12 @@ async def aget_summary_of_each_video(documents: List[Document],
             summary += f"&t={d.metadata['video_start']}s"
         summary += "\n"
 
-    return summary
+        input_char_len_processed += char_len_processed["input_chars"]
+        output_char_len_processed += char_len_processed["output_chars"]
+
+    total_char_len_processed = {
+        "input_chars": input_char_len_processed,
+        "output_chars": output_char_len_processed
+    }
+
+    return total_char_len_processed, summary

@@ -7,15 +7,17 @@ from typing import List
 from youtube.get_information import YoutubeConnect
 import openai
 
-from utils import http_connection_decorator, check_supported_models, get_transcripts
+from utils import check_supported_models, get_transcripts, chars_processed_dict_for_failed_cases_with_some_processing, \
+    chars_processed_dict_for_failed_cases_with_no_processing
+
 from get_chain import get_summary_of_each_video, \
-    aget_summary_of_each_video,\
+    aget_summary_of_each_video, \
     get_documents, \
     get_summary_with_keywords, \
     aget_summary_with_keywords
 
-
 import logging
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -25,20 +27,22 @@ from openai_prompts import get_per_document_with_keyword_prompt_template, \
     get_combine_document_with_source_prompt_template
 
 
-#["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
-#["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
+# ["https://www.youtube.com/@BeerBiceps", "https://www.youtube.com/@hubermanlab","https://www.youtube.com/@MachineLearningStreetTalk"]
+# ["AGI", "history", "spirituality", "human pyschology", "new developments in science"]
 async def process_videos(
-    youtube_video_links: List[str] = ["https://www.youtube.com/watch?v=MVYrJJNdrEg", "https://www.youtube.com/watch?v=e8qJsk1j2zE", "https://youtu.be/m8LnEp-4f2Y?si=ZgwnRQGp_DeztHdC", "https://m.youtube.com/watch?si=ZgwnRQGp_DeztHdC&v=m8LnEp-4f2Y&feature=youtu.be"],
-    search_terms: List[str] = None,
-    get_source: bool = False,
-    model_name: str = "gpt-4-1106-preview"
-) -> str:
-
+        youtube_video_links: List[str] = ["https://www.youtube.com/watch?v=MVYrJJNdrEg",
+                                          "https://www.youtube.com/watch?v=e8qJsk1j2zE",
+                                          "https://youtu.be/m8LnEp-4f2Y?si=ZgwnRQGp_DeztHdC",
+                                          "https://m.youtube.com/watch?si=ZgwnRQGp_DeztHdC&v=m8LnEp-4f2Y&feature=youtu.be"],
+        search_terms: List[str] = None,
+        get_source: bool = False,
+        model_name: str = "gpt-4-1106-preview"
+) -> (dict, str):
     youtube_connect = YoutubeConnect()
 
     # TO do check each link for correctness
-    #"https://m.youtube.com/watch?si=ZgwnRQGp_DeztHdC&v=m8LnEp-4f2Y&feature=youtu.be"
-    #"https://youtu.be/m8LnEp-4f2Y?si=ZgwnRQGp_DeztHdC"
+    # "https://m.youtube.com/watch?si=ZgwnRQGp_DeztHdC&v=m8LnEp-4f2Y&feature=youtu.be"
+    # "https://youtu.be/m8LnEp-4f2Y?si=ZgwnRQGp_DeztHdC"
     try:
         video_ids = []
         for link in youtube_video_links:
@@ -50,8 +54,10 @@ async def process_videos(
                 video_id = link.split("?v=")[1].split('&')[0]
             video_ids.append(video_id)
     except Exception as e:
-        print("Enter valid urls")
-        return "-1"
+        msg = "Enter valid urls"
+        print(msg)
+        logger.error(msg)
+        return chars_processed_dict_for_failed_cases_with_no_processing, msg
 
     logger.info(f"Analyzing {len(video_ids)} videos")
     print("\n")
@@ -69,7 +75,7 @@ async def process_videos(
 
     transcripts = get_transcripts(video_ids, video_titles)
     if len(transcripts) == 0:
-        return "Transcripts not available"
+        return chars_processed_dict_for_failed_cases_with_no_processing, "Transcripts not available"
 
     documents = get_documents(video_ids, video_titles, transcripts, model_name)
 
@@ -80,20 +86,21 @@ async def process_videos(
             combine_document_template = get_combine_document_with_source_prompt_template(model_name) if get_source \
                 else get_combine_document_prompt_template(model_name)
 
-            result = await aget_summary_with_keywords(documents, search_terms,
-                                                      per_document_template,
-                                                      combine_document_template,
-                                                      model_name,
-                                                      len(video_ids))
+            chars_processed, result = await aget_summary_with_keywords(documents, search_terms,
+                                                                       per_document_template,
+                                                                       combine_document_template,
+                                                                       model_name,
+                                                                       len(video_ids))
 
         else:
             per_document_template = get_per_document_prompt_template(model_name)
-            result = await aget_summary_of_each_video(documents, per_document_template, model_name)
+            chars_processed, result = await aget_summary_of_each_video(documents, per_document_template, model_name)
     except Exception as e:
-        print("Something bad happened with the request. Please retry :)")
-        return "-1"
+        msg = "Something bad happened with the request. Please retry :)"
+        print(msg)
+        return chars_processed_dict_for_failed_cases_with_some_processing, msg
 
-    return result
+    return chars_processed, result
 
 
 if __name__ == "__main__":
@@ -117,5 +124,3 @@ if __name__ == "__main__":
     asyncio.run(
         process_videos(args.youtube_video_links, args.search_terms, args.return_sources, args.model_name)
     )
-
-

@@ -22,8 +22,18 @@ from process_single_transcript import process_single_transcript
 import streamlit.components.v1 as components
 from streamlit_js_eval import streamlit_js_eval
 
-from utils import is_valid_openai_api_key, ui_spacer, process_html_string
+from utils import is_valid_openai_api_key, ui_spacer, process_html_string, get_usage_in_dollars, get_refresh_time, \
+    chars_processed_dict_for_failed_cases_with_some_processing, \
+    chars_processed_dict_for_failed_cases_with_no_processing
+
 from function_definitions import function_definitions
+
+from db import *
+
+daily_community_dollars = 12.0
+
+# Initialize the db if not done yet
+create_db_and_table()
 
 with open("youtube_summarizer/html_code_default_play.html","r") as f:
     html_code_default_play = f.read()
@@ -77,6 +87,11 @@ if 'processing' not in st.session_state:
 if 'welcome_message_shown' not in st.session_state:
     st.session_state.welcome_message_shown = False
 
+if 'using_community_tokens' not in st.session_state:
+    st.session_state.using_community_tokens = False
+
+if 'percent_community_token' not in st.session_state:
+    st.session_state.percent_community_token = 0
 
 screen_width = streamlit_js_eval(js_expressions='screen.width',
                                  want_output=True,
@@ -102,7 +117,50 @@ st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
 ui_spacer(2)
 
-openai_api_key = st.secrets["openai_api_key"]
+if not st.session_state.welcome_message_shown:
+    with st.chat_message("assistant"):
+        msg = "👋 Welcome to YouTube Buddy!\n\n" \
+              "Try 'Summarize this youtube video for me [url]'\n\n" \
+              "What is the recent Electoral Bonds Scam being discussed in India [url] \n\n" \
+              "Can you shorten this podcast and create clips for me around this topic?\n\n" \
+              "Summarize all the videos released by this channel in past 2 weeks"
+        st.write(msg)
+
+community_openai_api_key = None
+personal_openai_api_key = None
+openai_api_key = None
+
+t1,t2 = st.tabs(['community version','enter your own API key'])
+with t1:
+    input_tokens_used, output_token_used = get_today_token_usage()
+    logger.info(f"Input tokens used till now: {input_tokens_used}")
+    logger.info(f"Output tokens used till now: {output_token_used}")
+    dollars_used = get_usage_in_dollars(input_tokens_used, output_token_used)
+    pct = dollars_used/daily_community_dollars*100
+    st.session_state.percent_community_token = pct
+    st.write(f'Community tokens used: :{"green" if pct else "red"}[{int(pct)}%]')
+    st.progress((pct if pct <=100 else 100)/100)
+    if pct < 100.0:
+        openai_api_key = st.secrets["openai_api_key"]
+        st.write(
+            'Please consider using your own API key for helping the community.')
+    if pct > 100.0:
+        st.write(
+            f'Community tokens over for today. Refresh in: {get_refresh_time()}. '
+            f'Get your own OpenAI API key [here](https://platform.openai.com/account/api-keys)')
+
+
+with t2:
+    personal_openai_api_key = st.text_input('OpenAI API key', type='password', value=None)
+
+if personal_openai_api_key is not None:
+    openai_api_key = personal_openai_api_key
+    st.session_state.using_community_tokens = False
+
+if st.session_state.percent_community_token < 100.0 and personal_openai_api_key is None:
+    openai_api_key = community_openai_api_key
+    st.session_state.using_community_tokens = True
+
 
 if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
@@ -187,9 +245,11 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                 function_args = json.loads(tool_call.function.arguments)
                 try:
                     if function_name != "process_single_transcript":
+                        # all other functions other than process_single_transcript print results to create html
+                        # elements and need separate code to decide what to store in chat context
                         with st.chat_message("assistant"):
                             with rd.stdout(to=st.empty(), format="markdown"):
-                                function_response = asyncio.run(
+                                chars_processed, function_response = asyncio.run(
                                     function_to_call(
                                         **function_args
                                     )
@@ -215,12 +275,14 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                             st.session_state.messages.append(
                                 {"role": "assistant", "content": new_html_code, "html_code": True})
                     else:
-                        function_response = function_to_call(
+                        chars_processed, function_response = function_to_call(
                             **function_args
                         )
                 except Exception as e:
-                    logger.info(e)
-                    function_response = "Oops! Something is wrong with the request please retry."
+                    logger.error(e)
+                    function_response = "Something wrong with the request. Please try again :)"
+                    chars_processed = chars_processed_dict_for_failed_cases_with_no_processing
+                    # TODO: add chars used here
                     with st.chat_message("assistant"):
                         with rd.stdout(to=st.empty(), format="markdown"):
                             print(function_response)
@@ -231,6 +293,13 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "output": function_response
                 })
                 logger.info(function_response)
+
+                # Update token usage using the rough rule of 1 token = 4 chars of english
+                if st.session_state.using_community_tokens:
+                    input_tokens_processed = int(chars_processed["input_chars"] / 4)
+                    output_tokens_processed = int(chars_processed["output_chars"] / 4)
+                    save_or_update_tokens(input_tokens_processed, output_tokens_processed)
+
                 # Append the results of tool call
                 results_append_run = client.beta.threads.runs.submit_tool_outputs(
                     thread_id=st.session_state.thread_id,
@@ -269,6 +338,6 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
 
 else:
-    st.error("Please enter a valid OpenAI key in the Configuration tab to continue.")
+    st.error("Please enter a valid OpenAI key in the right tab to continue.")
 
 ui_spacer(2)
