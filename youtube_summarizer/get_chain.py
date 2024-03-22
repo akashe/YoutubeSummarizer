@@ -419,6 +419,10 @@ async def aget_summary_with_keywords(documents: List[Document],
     :return: the result summary
     """
 
+    total_char_len_processed = {
+        "input_chars": 0,
+        "output_chars": 0
+    }
     summary_keywords = ", ".join(keywords)
     input_char_len_processed = 0
     output_char_len_processed = 0
@@ -444,8 +448,8 @@ async def aget_summary_with_keywords(documents: List[Document],
                                                  max_tokens=max_tokens)
 
         smaller_summaries.append((source_doc, d_summary))
-        input_char_len_processed += char_len_processed["input_chars"]
-        output_char_len_processed += char_len_processed["output_chars"]
+        total_char_len_processed["input_chars"] += char_len_processed["input_chars"]
+        total_char_len_processed["output_chars"] += char_len_processed["output_chars"]
 
     big_summary = ""
     for source, summary in smaller_summaries:
@@ -453,7 +457,7 @@ async def aget_summary_with_keywords(documents: List[Document],
 
     if total_videos == 1:
         # If there is only a single video then we don't need to create a combined summary
-        return big_summary
+        return total_char_len_processed, big_summary
 
     logger.info("Generating consolidated summary based on your search topics")
     print('\n')
@@ -474,8 +478,8 @@ async def aget_summary_with_keywords(documents: List[Document],
                                                            max_tokens=max_tokens,
                                                            stream=False)
             smaller_chunks += smaller_chunk
-            input_char_len_processed += char_len_processed["input_chars"]
-            output_char_len_processed += char_len_processed["output_chars"]
+            total_char_len_processed["input_chars"] += char_len_processed["input_chars"]
+            total_char_len_processed["output_chars"] += char_len_processed["output_chars"]
 
         summaries = divide_big_summary_into_parts(smaller_chunks, open_ai_model)
 
@@ -485,13 +489,8 @@ async def aget_summary_with_keywords(documents: List[Document],
     char_len_processed, final_summary = await acompletion_with_retry(model_name=open_ai_model,
                                                  prompt_dict=prompt_dict,
                                                  max_tokens=max_tokens)
-    input_char_len_processed += char_len_processed["input_chars"]
-    output_char_len_processed += char_len_processed["output_chars"]
-
-    total_char_len_processed = {
-        "input_chars": input_char_len_processed,
-        "output_chars": output_char_len_processed
-    }
+    total_char_len_processed["input_chars"] += char_len_processed["input_chars"]
+    total_char_len_processed["output_chars"] += char_len_processed["output_chars"]
 
     return total_char_len_processed, final_summary
 
