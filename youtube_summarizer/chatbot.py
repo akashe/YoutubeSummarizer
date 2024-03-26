@@ -142,8 +142,8 @@ with t1:
     st.progress((pct if pct <=100 else 100)/100)
     if pct < 100.0:
         community_openai_api_key = st.secrets["openai_api_key"]
-        st.write(
-            'Please consider using your own API key for helping the community.')
+        #st.write(
+        #    'Please consider using your own API key for helping the community.')
     if pct > 100.0:
         st.write(
             f'Community tokens over for today. Refresh in: {get_refresh_time()}. '
