@@ -137,6 +137,8 @@ with t1:
     logger.info(f"Output tokens used till now: {output_token_used}")
     dollars_used = get_usage_in_dollars(input_tokens_used, output_token_used)
     pct = dollars_used/daily_community_dollars*100
+    if pct<=5:
+        pct=5
     st.session_state.percent_community_token = pct
     st.write(f'Community tokens used: :{"green" if pct else "red"}[{int(pct)}%]')
     st.progress((pct if pct <=100 else 100)/100)
