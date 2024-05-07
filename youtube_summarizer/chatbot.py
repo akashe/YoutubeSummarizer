@@ -30,7 +30,7 @@ from function_definitions import function_definitions
 
 from db import *
 
-daily_community_dollars = 12.0
+daily_community_dollars = 9.0
 
 # Initialize the db if not done yet
 create_db_and_table()
@@ -119,11 +119,12 @@ ui_spacer(2)
 
 if not st.session_state.welcome_message_shown:
     with st.chat_message("assistant"):
-        msg = "👋 Welcome to YouTube Buddy!\n\n" \
-              "Try 'Summarize this youtube video for me [url]'\n\n" \
-              "What is the recent Electoral Bonds Scam being discussed in India [url] \n\n" \
-              "Can you shorten this podcast and create clips for me around this topic?\n\n" \
-              "Summarize all the videos released by this channel in past 2 weeks"
+        msg = "👋 Welcome to YouTube Buddy!\n\n"\
+                "Try 'Summarize this youtube video for me [url]'\n\n" \
+                "Summarize all the videos released by this channel in past 2 weeks\n\n" \
+                "Summarize what was discussed about Trump in this video [url] \n\n" \
+                "How demand and supply shape economics as discussed in [url] \n\n" \
+                "Can you shorten this podcast and create clips for me around this topic?"
         st.write(msg)
 
 community_openai_api_key = None
@@ -199,9 +200,11 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
         with st.chat_message("assistant"):
             msg = "👋 Welcome to YouTube Buddy!\n\n"\
                   "Try 'Summarize this youtube video for me [url]'\n\n" \
-                  "What is the recent India Maldives row discussed in [url] \n\n" \
-                  "Can you shorten this podcast and create clips for me around this topic?\n\n" \
-                  "Summarize all the videos released by this channel in past 2 weeks"
+                  "Summarize all the videos released by this channel in past 2 weeks\n\n" \
+                  "Summarize what was discussed about Trump in this video [url] \n\n" \
+                  "How demand and supply shape economics as discussed in [url] \n\n" \
+                  "Can you shorten this podcast and create clips for me around this topic?"
+
             st.write(msg)
 
         st.session_state.messages.append({"role": "assistant", "content": msg})
