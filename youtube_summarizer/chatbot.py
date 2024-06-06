@@ -131,7 +131,7 @@ community_openai_api_key = None
 personal_openai_api_key = None
 openai_api_key = None
 
-t1,t2 = st.tabs(['community version','enter your own API key'])
+t1,t2 = st.tabs(['Community version','Enter your own API key'])
 with t1:
     input_tokens_used, output_token_used = get_today_token_usage()
     logger.info(f"Input tokens used till now: {input_tokens_used}")
@@ -343,6 +343,6 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
 
 else:
-    st.error("Please enter a valid OpenAI key in the right tab to continue.")
+    st.error("Please enter a valid OpenAI key in the 'Enter your own API key' tab to continue.")
 
 ui_spacer(2)
