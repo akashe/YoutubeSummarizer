@@ -30,7 +30,7 @@ from function_definitions import function_definitions
 
 from db import *
 
-daily_community_dollars = 5
+daily_community_dollars = 3.5
 
 # Initialize the db if not done yet
 create_db_and_table()
