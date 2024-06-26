@@ -62,7 +62,7 @@ def process_single_transcript(video_url: str,
 
         total_char_len_processed = {
             "input_chars": input_chars_processed,
-            "output_chars": 512
+            "output_chars": 0
         }
 
         return total_char_len_processed, json_transcript

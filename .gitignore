@@ -1,6 +1,7 @@
 credentials.json
 token.json
 
+youtube_summarizer/delete.py
 .idea/*
 test.py
 *.db
