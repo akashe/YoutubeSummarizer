@@ -62,6 +62,9 @@ def return_assistant_messages(run_to_check, thread_id):
             with st.chat_message("assistant"):
                 st.markdown(content)
             logger.info(content)
+            if st.session_state.using_community_tokens:
+                output_tokens_processed = int(len(content) / 4)
+                save_or_update_tokens(0, output_tokens_processed)
             st.session_state.messages.append({"role": "assistant", "content": content})
 
 

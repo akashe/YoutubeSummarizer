@@ -60,13 +60,9 @@ def process_single_transcript(video_url: str,
 
             input_chars_processed += len(json_transcript)
 
-        # This will be an estimation of chars processed because we only count length of total characters sent as input
-        # when this function is called, Assistant will use the result of this and answer directly. So the lenght of
-        # chars of output from the assistant isn't included. We would take a random guess and set the length of answer
-        # from Assistant as 512.
         total_char_len_processed = {
             "input_chars": input_chars_processed,
-            "output_chars": 512
+            "output_chars": 0
         }
 
         return total_char_len_processed, json_transcript
