@@ -300,7 +300,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "tool_call_id": tool_call_id,
                     "output": function_response
                 })
-                logger.info(function_response)
+                #logger.info(function_response)
 
                 # Update token usage using the rough rule of 1 token = 4 chars of english
                 if st.session_state.using_community_tokens:
