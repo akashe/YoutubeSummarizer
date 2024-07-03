@@ -78,6 +78,11 @@ available_functions = {
 possible_errors = ["The sought topics are not discussed in the video",
                    "Transcripts not available"]
 
+st.set_page_config(
+    page_title="YoutubeBuddy",
+    # page_icon="icon.png",
+)
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -114,7 +119,7 @@ with st.sidebar:
     ## YouTube Buddy
     """)
     st.write("Made by [Akash Kumar](https://www.linkedin.com/in/akashkumar2/).", unsafe_allow_html=True)
-    st.markdown('Source code can be found [here](https://github.com/akashe/YoutubeSummarizer/tree/dev).')
+    st.markdown('Do share your [feedback](https://f7f6zk74dit.typeform.com/to/kYw7Y8y7).')
 
 st.subheader("YouTube Buddy: Streamline Your YouTube Experience")
 
@@ -127,7 +132,8 @@ if not st.session_state.welcome_message_shown:
                 "Summarize all the videos released by this channel in past 2 weeks\n\n" \
                 "Summarize what was discussed about Trump in this video [url] \n\n" \
                 "How demand and supply shape economics as discussed in [url] \n\n" \
-                "Can you shorten this podcast and create clips for me around this topic?"
+                "Can you shorten this podcast and create clips for me around this topic? \n\n" \
+                "If you like buddy consider [buying me a coffee](https://buymeacoffee.com/akashe) 🤗"
         st.write(msg)
 
 community_openai_api_key = None
@@ -206,7 +212,8 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                   "Summarize all the videos released by this channel in past 2 weeks\n\n" \
                   "Summarize what was discussed about Trump in this video [url] \n\n" \
                   "How demand and supply shape economics as discussed in [url] \n\n" \
-                  "Can you shorten this podcast and create clips for me around this topic?"
+                  "Can you shorten this podcast and create clips for me around this topic? \n\n" \
+                  "If you like buddy consider [buying me a coffee](https://buymeacoffee.com/akashe) 🤗"
 
             st.write(msg)
 
