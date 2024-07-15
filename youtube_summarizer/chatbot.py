@@ -53,19 +53,27 @@ def check_run_status(run_to_check, thread_id):
 
 
 def return_assistant_messages(run_to_check, thread_id):
+
+    total_input_text_len = 0
+    total_output_text_len = 0
+
     messages = client.beta.threads.messages.list(
         thread_id=thread_id
     )
     for m in messages:
+        content = m.content[0].text.value
         if m.run_id == run_to_check.id and m.role == "assistant":
-            content = m.content[0].text.value
             with st.chat_message("assistant"):
                 st.markdown(content)
             logger.info(content)
-            if st.session_state.using_community_tokens:
-                output_tokens_processed = int(len(content) / 4)
-                save_or_update_tokens(0, output_tokens_processed)
             st.session_state.messages.append({"role": "assistant", "content": content})
+            total_output_text_len += len(content)
+        else:
+            total_input_text_len += len(content)
+    if st.session_state.using_community_tokens:
+        input_tokens_processed = int(total_input_text_len / 4)
+        output_tokens_processed = int(total_output_text_len / 4)
+        save_or_update_tokens(input_tokens_processed, output_tokens_processed)
 
 
 available_functions = {
