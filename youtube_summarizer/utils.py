@@ -217,8 +217,8 @@ window.onresize = function() {{
 
 
 def get_usage_in_dollars(input_tokens, output_tokens):
-    input_tokens_cost = input_tokens*10/1000000
-    output_tokens_cost = output_tokens*30/1000000
+    input_tokens_cost = input_tokens*0.15/1000000
+    output_tokens_cost = output_tokens*0.60/1000000
 
     return input_tokens_cost + output_tokens_cost
 

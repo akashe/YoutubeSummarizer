@@ -14,7 +14,7 @@ from utils import chars_processed_dict_for_failed_cases_with_no_processing
 
 
 def process_single_transcript(video_url: str,
-                              model_name: str = "gpt-4-1106-preview"):
+                              model_name: str = "gpt-4o-mini"):
 
     try:
         if "m.youtube" in video_url:

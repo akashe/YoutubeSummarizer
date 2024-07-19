@@ -30,7 +30,7 @@ from function_definitions import function_definitions
 
 from db import *
 
-daily_community_dollars = 5.0
+daily_community_dollars = 2.0
 
 # Initialize the db if not done yet
 create_db_and_table()
@@ -65,7 +65,7 @@ def return_assistant_messages(run_to_check, thread_id):
         if m.run_id == run_to_check.id and m.role == "assistant":
             with st.chat_message("assistant"):
                 st.markdown(content)
-            logger.info(content)
+            # logger.info(content)
             st.session_state.messages.append({"role": "assistant", "content": content})
             total_output_text_len += len(content)
         else:
@@ -197,7 +197,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "returned transcripts. Whenever asked to summarize videos use the inbuilt function to process video"
                     "and not rely on returned transcripts to generate summaries"
                     ,
-        model="gpt-4-1106-preview",
+        model="gpt-4o-mini",
         tools=function_definitions
     )
 

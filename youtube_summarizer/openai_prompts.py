@@ -1,7 +1,7 @@
 from langchain.prompts import PromptTemplate
 
 per_document_prompt = {
-    "gpt-4-1106-preview": {
+    "gpt-4o-mini": {
         "system": "Take a deep breadth. You are a news reporter whose job is to create summaries of videos."
                   "Given a transcript of a video, your job is to report everything that was mentioned.",
         "user": "Transcript: {context}"
@@ -22,7 +22,7 @@ def get_per_document_prompt_template(model_name: str) -> dict:
 
 
 per_document_with_keyword_prompt = {
-    "gpt-4-1106-preview": {
+    "gpt-4o-mini": {
         "system": "Take a deep breadth. You are a news reporter whose job is to cover the following topics: {summary_keywords}. "
                   "Given a transcript of a video, your job is to report everything that was mentioned about the topics. "
                   "If the topics are not covered in the transcript, clearly mention that the topics are not covered. ",
@@ -46,7 +46,7 @@ def get_per_document_with_keyword_prompt_template(model_name: str) -> dict:
 
 
 combine_document_with_keyword_prompt = {
-    "gpt-4-1106-preview": {
+    "gpt-4o-mini": {
         "system": "Take a deep breadth. You are a news reporter. You are given summarized reports from different reporters."
                   "Each report is created as a discussion around these topics: {summary_keywords}."
                   "Every report does not contain information of all the topics. Some report cover a particular topic or multiple topics."
@@ -70,7 +70,7 @@ def get_combine_document_prompt_template(model_name: str) -> dict:
 
 
 combine_document_with_source_prompt = {
-    "gpt-4-1106-preview": {
+    "gpt-4o-mini": {
         "system": "Take a deep breadth. You are a news reporter. You are given summarized reports from different reporters."
                   "Each report is created as a discussion around these topics: {summary_keywords}."
                   "Each report contains the id of the source video of the report"

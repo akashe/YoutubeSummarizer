@@ -36,7 +36,7 @@ async def process_videos(
                                           "https://m.youtube.com/watch?si=ZgwnRQGp_DeztHdC&v=m8LnEp-4f2Y&feature=youtu.be"],
         search_terms: List[str] = None,
         get_source: bool = False,
-        model_name: str = "gpt-4-1106-preview"
+        model_name: str = "gpt-4o-mini"
 ) -> (dict, str):
     youtube_connect = YoutubeConnect()
 

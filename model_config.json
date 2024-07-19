@@ -17,5 +17,8 @@
   "gpt-4-0125-preview": {
     "max_allowed_token_len": 128000
   },
+  "gpt-4o-mini": {
+    "max_allowed_token_len": 128000
+  },
   "tokens_for_prompt_and_generation" : 376
 }
