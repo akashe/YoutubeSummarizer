@@ -4,11 +4,11 @@
 
 Get information from youtube videos the way you want it.
 
-1. **Video Summary**:
-2. **Keyword Specific Summary**:
-3. **Channel Summaries**: 
-4. **Ask question about video via chat**:
-5. **Create clips**: 
+1. **Video Summary**
+2. **Keyword Specific Summary**
+3. **Channel Summaries**
+4. **Ask question about video via chat**
+5. **Create clips**
 
 
 ### Community tokens:
