@@ -2,9 +2,7 @@
 
 [Click here to try it out!](https://youtubebuddy.streamlit.app/)
 
-In the modern world, we find ourselves overwhelmed with an overabundance of content on a daily basis. Furthermore, staying on top of the latest videos, podcasts, and interviews could be an uphill task, especially in fields such as AI. 
-
-To make matters easier, we introduce to you Youtube Summarizer, a tool designed to provide summarized recaps of your favorite videos and channels. The features of our App include:
+Get information from youtube videos the way you want it.
 
 1. **Video Summary**: Generate a concise summary of videos.
 2. **Keyword Specific Summary**:
@@ -18,16 +16,6 @@ To make matters easier, we introduce to you Youtube Summarizer, a tool designed 
 ### Obtain your OpenAI API key
 This application uses OpenAI models. To use the app, you need an API key.
 Click [here](https://www.maisieai.com/help/how-to-get-an-openai-api-key-for-chatgpt) to learn how to create your OpenAI API key.
-
-
-
-### Choosing between GPT4 and GPT3.5:
-
-The summarization quality is significantly influenced by the Language Learning Model (LLM) choice:
-
-- GPT3.5 provides you with fast but succinct information. 
-- For a more comprehensive and detailed summary, resort to GPT-4. 
-- Chatbot by default uses latest GPT-4 variant.
 
 ### Steps to Run the App Locally
 
@@ -45,6 +33,7 @@ Running the app locally involves the following steps:
 
 #### Entry points for code
 
+- **chatbot.py**: Streamlit UI to get information from youtube using a chatbot.
 - **process_videos**: Use this entry point to process a single or multiple videos, employing or ignoring keywords.
 - **process_channels**: Use this to process single or multiple channels with or without search terms.
 - **process_a_playlist**: This entry point processes all the videos in a selected playlist.
