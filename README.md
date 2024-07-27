@@ -4,18 +4,17 @@
 
 Get information from youtube videos the way you want it.
 
-1. **Video Summary**: Generate a concise summary of videos.
+1. **Video Summary**:
 2. **Keyword Specific Summary**:
-   - Enter a specific keyword such as "conflict" to obtain a targeted summary focused on that topic.
-   - Ideal when a video covers multiple topics of interest like "war", "AGI", "Psychology"; the app will produce summaries relevant to each topic.
-3. **Channel Summary**: If you don't have time to watch every video from your favorite channel, use our tool to generate a summary of all videos released in the past few weeks across multiple channels. A handy way to stay updated with what’s interesting.
-4. **Keyword Specific Channel Summary**: Tailor your channel summary based on specific topics of interest. For instance, if you are interested in "market fluctuation", get a precise summary of videos discussing this topic over the past weeks. Save your time and benefit from focused viewing.
-5. **Ask question about video**: Want to understand topics mentioned in the video, just ask the bot to answer it for you.
-6. **Create clips**: Create smaller video clips from video for general summary of the video or you can ask to create clips for specific topics also.
+3. **Channel Summaries**: 
+4. **Ask question about video via chat**:
+5. **Create clips**: 
 
-### Obtain your OpenAI API key
-This application uses OpenAI models. To use the app, you need an API key.
-Click [here](https://www.maisieai.com/help/how-to-get-an-openai-api-key-for-chatgpt) to learn how to create your OpenAI API key.
+
+### Community tokens:
+To allow people try out youtubebuddy we allow open access worth 2.5$ compute costs daily. Once the community tokens are exhausted, users can use their own personal OpenAI access keys.
+If you like the app, consider [buying us a coffee](https://buymeacoffee.com/akashe). This would help us cover compute costs.
+
 
 ### Steps to Run the App Locally
 
@@ -26,14 +25,17 @@ Running the app locally involves the following steps:
 3. [Create OAuth configuration for your project.](https://developers.google.com/workspace/guides/configure-oauth-consent)
 4. [Generate access credentials for your Google cloud project.](https://developers.google.com/workspace/guides/create-credentials)
 5. [Download 'credentials.json' from your project and keep it locally.](https://techiejackieblogs.com/how-to-create-google-mail-api-credentials-json/)
-6. Execute 'youtube_summarizer/process_videos.py'.
+6. Execute 'streamlit run youtube_summarizer/chatbot.py'.
 7. On initial execution, authenticate the project via a Gmail account.
 8. This will locally save a 'token.json' file, containing the access token for future access without having to authenticate again.
+9. Open the streamlit app in UI and start interacting via chat.
 
 
 #### Entry points for code
-
+We mostly maintain the codebase for the streamlit entrpoints which allow interacting with YoutubeBuddy via chat. We use Assistants API from OpenAI for the chatbot and use the 'gpt-4o-mini' model for all processing.
 - **chatbot.py**: Streamlit UI to get information from youtube using a chatbot.
+
+[Retired entrypoints]
 - **process_videos**: Use this entry point to process a single or multiple videos, employing or ignoring keywords.
 - **process_channels**: Use this to process single or multiple channels with or without search terms.
 - **process_a_playlist**: This entry point processes all the videos in a selected playlist.
