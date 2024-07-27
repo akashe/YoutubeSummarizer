@@ -12,7 +12,7 @@ Get information from youtube videos the way you want it.
 
 
 ### Community tokens:
-To allow people try out youtubebuddy we allow open access worth 2.5$ compute costs daily. Once the community tokens are exhausted, users can use their own personal OpenAI access keys.
+To allow people try out youtubebuddy we allocate open access worth 2.5$ compute costs daily. Once the community tokens are exhausted, users can use their own personal OpenAI access keys.
 If you like the app, consider [buying us a coffee](https://buymeacoffee.com/akashe). This would help us cover compute costs.
 
 
