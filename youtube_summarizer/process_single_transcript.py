@@ -38,6 +38,7 @@ def process_single_transcript(video_url: str,
         print("\n")
         print(f'English transcripts unavailable for the video')
     finally:
+        logger.info(f'Using subtitles {len(json_transcript)}')
 
         input_chars_processed = 0
         if isinstance(json_transcript, list):
