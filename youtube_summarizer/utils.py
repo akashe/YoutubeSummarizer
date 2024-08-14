@@ -40,7 +40,8 @@ def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[
         try:
             json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
             transcripts.append(json_transcript)
-        except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound):
+        except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound) as e:
+            logger.info(f'Subtitle error {e}')
             logger.info(f'Subtitles unavailable for the video "{video_title}"')
             print("\n")
             print(f'English transcripts unavailable for the video "{video_title}"')
