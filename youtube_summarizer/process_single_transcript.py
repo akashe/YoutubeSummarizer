@@ -32,7 +32,8 @@ def process_single_transcript(video_url: str,
     json_transcript = "Sorry! English transcripts unavailable for the video"
     try:
         json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
-    except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound):
+    except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound) as e:
+        logger.info(f'Subtitle error {e}')
         logger.info(f'English Subtitles unavailable for the video')
         print("\n")
         print(f'English transcripts unavailable for the video')
