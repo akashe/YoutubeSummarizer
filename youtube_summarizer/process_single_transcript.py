@@ -1,6 +1,8 @@
 import pdb
 import tiktoken
 import logging
+import random
+import streamlit as st
 
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
@@ -31,7 +33,21 @@ def process_single_transcript(video_url: str,
 
     json_transcript = "Sorry! English transcripts unavailable for the video"
     try:
-        json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
+        username = st.secrets["proxy_username"]
+        password = st.secrets["proxy_password"]
+
+        ports = ["10001", "10002", "10003", "10004", "10005", "10006", "10007", "10008", "10009", "10010"]
+        port = random.choice(ports)
+
+        proxy = f"http://{username}:{password}@gate.smartproxy.com:{port}"
+        logger.info(f'proxy: {proxy}')
+
+        proxies = {
+            'http': proxy,
+            'https': proxy
+        }
+
+        json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'], proxies=proxies)
     except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound) as e:
         logger.info(f'Subtitle error {e}')
         logger.info(f'English Subtitles unavailable for the video')
