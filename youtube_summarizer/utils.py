@@ -35,10 +35,20 @@ def check_supported_models(model_name: str) -> bool:
 
 def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[dict]]:
 
+    username = st.secrets["proxy_username"]
+    password = st.secrets["proxy_password"]
+
+    proxy = f"http://{username}:{password}@gate.smartproxy.com:10001"
+
+    proxies = {
+        'http': proxy,
+        'https': proxy
+    }
+    
     transcripts = []
     for video_id, video_title in zip(video_ids, video_titles):
         try:
-            json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'])
+            json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'], proxies=proxies)
             transcripts.append(json_transcript)
         except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound) as e:
             logger.info(f'Subtitle error {e}')
