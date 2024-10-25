@@ -3,6 +3,7 @@ import json
 from typing import List
 import openai
 import streamlit as st
+import random
 
 
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -38,7 +39,11 @@ def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[
     username = st.secrets["proxy_username"]
     password = st.secrets["proxy_password"]
 
-    proxy = f"http://{username}:{password}@gate.smartproxy.com:10001"
+    ports = ["10001", "10002", "10003", "10004", "10005", "10006", "10007", "10008", "10009", "10010"]
+    port = random.choice(ports)
+
+    proxy = f"http://{username}:{password}@gate.smartproxy.com:{port}"
+    logger.info(f'proxy: {proxy}')
 
     proxies = {
         'http': proxy,
