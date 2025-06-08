@@ -39,7 +39,7 @@ def process_single_transcript(video_url: str,
         ports = ["10001", "10002", "10003", "10004", "10005", "10006", "10007", "10008", "10009", "10010"]
         port = random.choice(ports)
 
-        proxy = f"http://{username}:{password}@gate.smartproxy.com:{port}"
+        proxy = f"http://{username}:{password}@gate.decodo.com:{port}"
         logger.info(f'proxy: {proxy}')
 
         proxies = {
