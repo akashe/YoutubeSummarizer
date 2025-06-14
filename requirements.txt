@@ -11,6 +11,7 @@ certifi==2023.7.22
 charset-normalizer==3.2.0
 click==8.1.7
 dataclasses-json==0.5.14
+defusedxml==0.7.1
 distro==1.8.0
 fire==0.5.0
 frozenlist==1.4.0
@@ -91,5 +92,5 @@ uritemplate==4.1.1
 urllib3==1.26.16
 validators==0.22.0
 yarl==1.9.2
-youtube-transcript-api==0.6.1
+youtube-transcript-api==1.1.0
 zipp==3.17.0

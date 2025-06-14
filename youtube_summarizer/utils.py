@@ -4,10 +4,12 @@ from typing import List
 import openai
 import streamlit as st
 import random
+import pdb
 
 
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 import logging
 logger = logging.getLogger(__name__)
@@ -43,20 +45,21 @@ def get_transcripts(video_ids: List[str], video_titles: List[str]) -> List[List[
     # port = random.choice(ports)
     port = 7000
 
-    proxy = f"http://{username}:{password}@gate.decodo.com:{port}"
-    logger.info(f'proxy: {proxy}')
-
-    proxies = {
-        'http': proxy,
-        'https': proxy
-    }
+    http_proxy = f"http://{username}:{password}@gate.decodo.com:{port}"
+    https_proxy = f"https://{username}:{password}@gate.decodo.com:{port}"
     
     transcripts = []
     for video_id, video_title in zip(video_ids, video_titles):
         try:
-            json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'], proxies=proxies)
+            transcript_api = YouTubeTranscriptApi(
+                proxy_config=GenericProxyConfig(
+                    http_url=http_proxy,
+                    https_url=https_proxy,
+                )
+            )
+            json_transcript = transcript_api.fetch(video_id, languages=['en', 'en-GB']).to_raw_data()
             transcripts.append(json_transcript)
-        except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound) as e:
+        except (TranscriptsDisabled, NoTranscriptFound) as e:
             logger.info(f'Subtitle error {e}')
             logger.info(f'Subtitles unavailable for the video "{video_title}"')
             print("\n")

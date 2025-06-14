@@ -5,7 +5,8 @@ import random
 import streamlit as st
 
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound
+from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 from get_chain import get_model_max_len
 
@@ -40,16 +41,19 @@ def process_single_transcript(video_url: str,
         # port = random.choice(ports)
         port = 7000
 
-        proxy = f"http://{username}:{password}@gate.decodo.com:{port}"
-        logger.info(f'proxy: {proxy}')
+        http_proxy = f"http://{username}:{password}@gate.decodo.com:{port}"
+        https_proxy = f"https://{username}:{password}@gate.decodo.com:{port}"
+        logger.info(f'proxy: {http_proxy}')
 
-        proxies = {
-            'http': proxy,
-            'https': proxy
-        }
 
-        json_transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-GB'], proxies=proxies)
-    except (TranscriptsDisabled, NoTranscriptAvailable, NoTranscriptFound) as e:
+        transcript_api = YouTubeTranscriptApi(
+            proxy_config=GenericProxyConfig(
+                http_url=http_proxy,
+                https_url=https_proxy,
+            )
+        )
+        json_transcript = transcript_api.fetch(video_id, languages=['en', 'en-GB']).to_raw_data()
+    except Exception as e:
         logger.info(f'Subtitle error {e}')
         logger.info(f'English Subtitles unavailable for the video')
         print("\n")
