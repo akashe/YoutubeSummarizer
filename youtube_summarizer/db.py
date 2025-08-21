@@ -25,7 +25,7 @@ def create_db_and_table(db_name="token_usage.db"):
     conn.close()
 
 
-def save_or_update_tokens(input_tokens, output_tokens, db_name="token_usage.db", model_name="gpt-4o-mini"):
+def save_or_update_tokens(input_tokens, output_tokens, db_name="token_usage.db", model_name="gpt-5-nano-2025-08-07"):
     """Save or update the number of tokens processed for the current day."""
     today = datetime.now().strftime("%Y-%m-%d")
     conn = sqlite3.connect(db_name)

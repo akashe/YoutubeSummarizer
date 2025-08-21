@@ -32,7 +32,7 @@ Running the app locally involves the following steps:
 
 
 #### Entry points for code
-We mostly maintain the codebase for the streamlit entrpoints which allow interacting with YoutubeBuddy via chat. We use Assistants API from OpenAI for the chatbot and use the 'gpt-4o-mini' model for all processing.
+We mostly maintain the codebase for the streamlit entrpoints which allow interacting with YoutubeBuddy via chat. We use Assistants API from OpenAI for the chatbot and use the 'gpt-5-nano' model for all processing.
 - **chatbot.py**: Streamlit UI to get information from youtube using a chatbot.
 
 [Retired entrypoints]

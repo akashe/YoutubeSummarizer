@@ -25,7 +25,7 @@ async def process_a_playlist(
     last_n_videos: int = 10,
     search_terms: List[str] = ["AGI", "history", "spirituality", "human pyschology", "new developments in science"],
     get_source: bool = False,
-    model_name: str = "gpt-4"
+    model_name: str = "gpt-5-nano-2025-08-07"
 ) -> str:
 
     assert youtube_playlist_name.lower() != "watch later", "Watch later not accesible via YoutubeData API"
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                              "a general summary will be created.")
     parser.add_argument('--return_sources', action='store_true', default=False,
                         help="To return sources of information in the final summary.")
-    parser.add_argument('--model_name', default='gpt-4',
+    parser.add_argument('--model_name', default='gpt-5-nano-2025-08-07',
                         help="model to use for generating summaries.")
 
     args = parser.parse_args()

@@ -31,7 +31,7 @@ async def process_channels(
         summary_of_n_weeks: int = 1,
         search_terms: List[str] = None,
         get_source: bool = False,
-        model_name: str = "gpt-4o-mini"
+        model_name: str = "gpt-5-nano-2025-08-07"
 ) -> (dict, str):
     latest_video_ids = []
     youtube_connect = YoutubeConnect()

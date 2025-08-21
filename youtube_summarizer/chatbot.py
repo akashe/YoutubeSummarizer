@@ -136,12 +136,12 @@ ui_spacer(2)
 if not st.session_state.welcome_message_shown:
     with st.chat_message("assistant"):
         msg = "👋 Welcome to YouTube Buddy!\n\n"\
-                "Try 'Summarize this youtube video for me [url]'\n\n" \
-                "Summarize all the videos released by this channel in past 2 weeks\n\n" \
-                "Summarize what was discussed about Trump in this video [url] \n\n" \
-                "How demand and supply shape economics as discussed in [url] \n\n" \
-                "Can you shorten this podcast and create clips for me around this topic? \n\n" \
-                "If you like buddy consider [buying me a coffee](https://buymeacoffee.com/akashe) 🤗"
+                  "Try 'Summarize this youtube video for me [video url]'\n\n" \
+                  "Summarize all the videos released by this channel in past 2 weeks\n\n" \
+                  "Summarize what was discussed about Trump in this video [url] \n\n" \
+                  "Can you shorten this podcast and create clips for me around this topic? \n\n" \
+                  "[News: We now use GPT-5 models for all our tasks!]" \
+                  "If you like buddy consider [buying me a coffee](https://buymeacoffee.com/akashe) 🤗"
         st.write(msg)
 
 community_openai_api_key = None
@@ -197,7 +197,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "returned transcripts. Whenever asked to summarize videos use the inbuilt function to process video"
                     "and not rely on returned transcripts to generate summaries"
                     ,
-        model="gpt-4o-mini",
+        model="gpt-5-nano-2025-08-07",
         tools=function_definitions
     )
 
@@ -216,11 +216,11 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
     if not st.session_state.welcome_message_shown:
         with st.chat_message("assistant"):
             msg = "👋 Welcome to YouTube Buddy!\n\n"\
-                  "Try 'Summarize this youtube video for me [url]'\n\n" \
+                  "Try 'Summarize this youtube video for me [video url]'\n\n" \
                   "Summarize all the videos released by this channel in past 2 weeks\n\n" \
                   "Summarize what was discussed about Trump in this video [url] \n\n" \
-                  "How demand and supply shape economics as discussed in [url] \n\n" \
                   "Can you shorten this podcast and create clips for me around this topic? \n\n" \
+                  "[News: We now use GPT-5 models for all our tasks!]" \
                   "If you like buddy consider [buying me a coffee](https://buymeacoffee.com/akashe) 🤗"
 
             st.write(msg)

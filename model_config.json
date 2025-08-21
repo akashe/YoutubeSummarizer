@@ -20,5 +20,8 @@
   "gpt-4o-mini": {
     "max_allowed_token_len": 128000
   },
+  "gpt-5-nano-2025-08-07": {
+    "max_allowed_token_len": 400000
+  },
   "tokens_for_prompt_and_generation" : 376
 }
