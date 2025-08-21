@@ -293,7 +293,6 @@ async def aget_response_from_llm(model_name: str,
             {"role": "system", "content": prompt_dict["system"]},
             {'role': 'user', 'content': prompt_dict["user"]}
         ],
-        temperature=0,
         stream=stream
     )
 
