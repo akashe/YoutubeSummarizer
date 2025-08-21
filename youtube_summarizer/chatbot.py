@@ -140,7 +140,7 @@ if not st.session_state.welcome_message_shown:
                   "Summarize all the videos released by this channel in past 2 weeks\n\n" \
                   "Summarize what was discussed about Trump in this video [url] \n\n" \
                   "Can you shorten this podcast and create clips for me around this topic? \n\n" \
-                  "[News: We now use GPT-5 models for all our tasks!]" \
+                  "[News: We now use GPT-5 models for all our tasks!] \n\n" \
                   "If you like buddy consider [buying me a coffee](https://buymeacoffee.com/akashe) 🤗"
         st.write(msg)
 
@@ -197,7 +197,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                     "returned transcripts. Whenever asked to summarize videos use the inbuilt function to process video"
                     "and not rely on returned transcripts to generate summaries"
                     ,
-        model="gpt-5-nano-2025-08-07",
+        model="gpt-4o-mini",
         tools=function_definitions
     )
 
@@ -220,7 +220,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
                   "Summarize all the videos released by this channel in past 2 weeks\n\n" \
                   "Summarize what was discussed about Trump in this video [url] \n\n" \
                   "Can you shorten this podcast and create clips for me around this topic? \n\n" \
-                  "[News: We now use GPT-5 models for all our tasks!]" \
+                  "[News: We now use GPT-5 models for all our tasks!] \n\n" \
                   "If you like buddy consider [buying me a coffee](https://buymeacoffee.com/akashe) 🤗"
 
             st.write(msg)
