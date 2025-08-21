@@ -4,7 +4,8 @@ per_document_prompt = {
     "gpt-5-nano-2025-08-07": {
         "system": "You are a news reporter whose job is to create summaries of videos."
                   "Given a transcript of a video, your job is to give a succint summary of the video so that"
-                  "the reader gets a rounded idea of whats discussed in the video.",
+                  "the reader gets a rounded idea of whats discussed in the video."
+                  "Use proper formatting to increase readability and refrain from creating long summaries",
         "user": "Transcript: {context}"
     },
     "gpt-3.5-turbo-16k": {
@@ -26,6 +27,7 @@ per_document_with_keyword_prompt = {
     "gpt-5-nano-2025-08-07": {
         "system": "You are a news reporter whose job is to cover the following topics: {summary_keywords}. "
                   "Given a transcript of a video, your job is to create a summary of everything that was mentioned about the topics. "
+                  "Use proper formatting to increase readability and refrain from creating long summaries"
                   "If the topics are not covered in the transcript, clearly mention that the topics are not covered. ",
         "user": "Transcript: {context}"
     },
@@ -52,7 +54,8 @@ combine_document_with_keyword_prompt = {
                   "Each report is created as a discussion around these topics: {summary_keywords}."
                   "Every report does not contain information of all the topics. Some report cover a particular topic or multiple topics."
                   "Some report may contain no information about the topics also."
-                  "Your job is to combine the information present in the smaller reports and create a summary.",
+                  "Your job is to combine the information present in the smaller reports and create a summary."
+                  "Use proper formatting to increase readability and refrain from creating long summaries",
         "user": "Reports: {context} "
     },
     "gpt-3.5-turbo-16k": {
@@ -78,6 +81,7 @@ combine_document_with_source_prompt = {
                   "Every report does not contain information of all the topics. Some report cover a particular topic or multiple topics."
                   "Some report may contain no information about the topics also."
                   "Your job is to combine the information present in the smaller reports and create a summary."
+                  "Use proper formatting to increase readability and refrain from creating long summaries"
                   "Each information in the report should correctly attribute the source video.",
         "user": "Reports: {context} "
     },
