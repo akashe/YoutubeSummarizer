@@ -57,7 +57,13 @@ def get_time_encoded_transcripts(transcript: List[dict],
             the transcript split)
     """
 
-    enc = tiktoken.encoding_for_model(model_name)
+    try:
+        enc = tiktoken.encoding_for_model(model_name)
+    except Exception as e:
+        logger.error(f"Error in getting encoding for model {model_name}: {e}")
+        logger.info("Using default encoding for model gpt-4o-mini")
+        enc = tiktoken.encoding_for_model("gpt-4o-mini")
+
     model_max_token_len = get_model_max_len(model_name)
 
     sentences = []
@@ -141,7 +147,14 @@ def divide_big_summary_into_parts(summary: str, model_name: str) -> List[str]:
     :param model_name: model name used for summarizartion
     :return: list of smaller summaries
     """
-    enc = tiktoken.encoding_for_model(model_name)
+    try:
+        enc = tiktoken.encoding_for_model(model_name)
+    except Exception as e:
+        logger.error(f"Error in getting encoding for model {model_name}: {e}")
+        logger.info("Using default encoding for model gpt-4o-mini")
+        # TODO: Update to latest version of tiktoken
+        enc = tiktoken.encoding_for_model("gpt-4o-mini")
+
     model_max_token_len = get_model_max_len(model_name)
 
     encoded_summary = enc.encode(summary)
@@ -197,7 +210,13 @@ def get_max_tokens(text: str, model_name:str) -> int:
 
     model_max_tokens = get_model_max_tokens(model_name)
 
-    enc = tiktoken.encoding_for_model(model_name)
+    try:
+        enc = tiktoken.encoding_for_model(model_name)
+    except Exception as e:
+        logger.error(f"Error in getting encoding for model {model_name}: {e}")
+        logger.info("Using default encoding for model gpt-4o-mini")
+        enc = tiktoken.encoding_for_model("gpt-4o-mini")
+        
     enc_text = enc.encode(text)
 
     # Setting 1500 to allow for more output from GPT 5 nano models with 400k context len
