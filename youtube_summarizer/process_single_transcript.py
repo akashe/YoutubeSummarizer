@@ -73,7 +73,7 @@ def process_single_transcript(video_url: str,
                 logger.error(f"Error in getting encoding for model {model_name}: {e}")
                 logger.info("Using default encoding for model gpt-4o-mini")
                 enc = tiktoken.encoding_for_model("gpt-4o-mini")
-                
+
             model_max_token_len = get_model_max_len(model_name)
 
             # removing additional tokens to take care of past chat history

@@ -23,5 +23,8 @@
   "gpt-5-nano-2025-08-07": {
     "max_allowed_token_len": 400000
   },
+  "gpt-4.1-nano-2025-04-14": {
+    "max_allowed_token_len": 1000000
+  },
   "tokens_for_prompt_and_generation" : 376
 }
