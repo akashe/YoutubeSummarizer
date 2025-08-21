@@ -216,7 +216,7 @@ def get_max_tokens(text: str, model_name:str) -> int:
         logger.error(f"Error in getting encoding for model {model_name}: {e}")
         logger.info("Using default encoding for model gpt-4o-mini")
         enc = tiktoken.encoding_for_model("gpt-4o-mini")
-        
+
     enc_text = enc.encode(text)
 
     # Setting 1500 to allow for more output from GPT 5 nano models with 400k context len
@@ -294,7 +294,6 @@ async def aget_response_from_llm(model_name: str,
             {'role': 'user', 'content': prompt_dict["user"]}
         ],
         temperature=0,
-        max_tokens=max_tokens,
         stream=stream
     )
 
