@@ -2,8 +2,9 @@ from langchain.prompts import PromptTemplate
 
 per_document_prompt = {
     "gpt-5-nano-2025-08-07": {
-        "system": "Take a deep breadth. You are a news reporter whose job is to create summaries of videos."
-                  "Given a transcript of a video, your job is to report everything that was mentioned.",
+        "system": "You are a news reporter whose job is to create summaries of videos."
+                  "Given a transcript of a video, your job is to give a succint summary of the video so that"
+                  "the reader gets a rounded idea of whats discussed in the video.",
         "user": "Transcript: {context}"
     },
     "gpt-3.5-turbo-16k": {
@@ -23,8 +24,8 @@ def get_per_document_prompt_template(model_name: str) -> dict:
 
 per_document_with_keyword_prompt = {
     "gpt-5-nano-2025-08-07": {
-        "system": "Take a deep breadth. You are a news reporter whose job is to cover the following topics: {summary_keywords}. "
-                  "Given a transcript of a video, your job is to report everything that was mentioned about the topics. "
+        "system": "You are a news reporter whose job is to cover the following topics: {summary_keywords}. "
+                  "Given a transcript of a video, your job is to create a summary of everything that was mentioned about the topics. "
                   "If the topics are not covered in the transcript, clearly mention that the topics are not covered. ",
         "user": "Transcript: {context}"
     },
@@ -47,11 +48,11 @@ def get_per_document_with_keyword_prompt_template(model_name: str) -> dict:
 
 combine_document_with_keyword_prompt = {
     "gpt-5-nano-2025-08-07": {
-        "system": "Take a deep breadth. You are a news reporter. You are given summarized reports from different reporters."
+        "system": "You are a news reporter. You are given summarized reports from different reporters."
                   "Each report is created as a discussion around these topics: {summary_keywords}."
                   "Every report does not contain information of all the topics. Some report cover a particular topic or multiple topics."
                   "Some report may contain no information about the topics also."
-                  "Your job is to combine the information present in the smaller reports and create a big report.",
+                  "Your job is to combine the information present in the smaller reports and create a summary.",
         "user": "Reports: {context} "
     },
     "gpt-3.5-turbo-16k": {
@@ -71,12 +72,12 @@ def get_combine_document_prompt_template(model_name: str) -> dict:
 
 combine_document_with_source_prompt = {
     "gpt-5-nano-2025-08-07": {
-        "system": "Take a deep breadth. You are a news reporter. You are given summarized reports from different reporters."
+        "system": "You are a news reporter. You are given summarized reports from different reporters."
                   "Each report is created as a discussion around these topics: {summary_keywords}."
                   "Each report contains the id of the source video of the report"
                   "Every report does not contain information of all the topics. Some report cover a particular topic or multiple topics."
                   "Some report may contain no information about the topics also."
-                  "Your job is to combine the information present in the smaller reports and create a big report."
+                  "Your job is to combine the information present in the smaller reports and create a summary."
                   "Each information in the report should correctly attribute the source video.",
         "user": "Reports: {context} "
     },
