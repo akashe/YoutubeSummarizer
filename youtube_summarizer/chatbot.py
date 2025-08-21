@@ -191,14 +191,14 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
 
     assistant = client.beta.assistants.create(
         name="Youtube Assistant",
-        description=""" You're a helpful assistant that extracts info from YouTube videos. 
-        You have 4 functions: 
-        1) Answer questions about specific videos 
-        2) Summarize single/multiple videos 
-        3) Summarize recent channel uploads 
-        4) Create clips of key moments from videos. 
-        For summaries, use process_videos (not process_single_transcript). 
-        Use process_single_transcript only for answering specific questions since it returns full transcripts.""",
+        description="""You're a helpful assistant that extracts info from YouTube videos. 
+        You have 4 functions:
+        1) process_videos - for ALL video summaries 
+        2) process_single_transcript - ONLY for specific questions about video content 
+        3) process_channels - summarize recent channel uploads 
+        4) create_clips_for_video - create key moment clips. 
+        NEVER use process_single_transcript for summaries - always use process_videos. 
+        Don't entertain non-YouTube requests - politely suggest this isn't the right platform.""",
         model="gpt-4.1-nano-2025-04-14",
         tools=function_definitions
     )
