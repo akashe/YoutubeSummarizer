@@ -198,8 +198,7 @@ if openai_api_key and is_valid_openai_api_key(openai_api_key):
         3) Summarize recent channel uploads 
         4) Create clips of key moments from videos. 
         For summaries, use process_videos (not process_single_transcript). 
-        Use process_single_transcript only for answering specific questions since it returns full transcripts.
-        Don't entertain other requests - politely suggest this isn't the right platform for non-YouTube queries.""",
+        Use process_single_transcript only for answering specific questions since it returns full transcripts.""",
         model="gpt-4.1-nano-2025-04-14",
         tools=function_definitions
     )
