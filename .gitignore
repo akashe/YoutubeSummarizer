@@ -1,6 +1,8 @@
 credentials.json
 token.json
 
+*secrets*
+.python-version
 youtube_summarizer/delete.py
 .idea/*
 test.py
