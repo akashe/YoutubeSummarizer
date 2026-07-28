@@ -94,5 +94,5 @@ uritemplate==4.1.1
 urllib3==1.26.16
 validators==0.22.0
 yarl==1.9.2
-youtube-transcript-api==1.1.0
+youtube-transcript-api
 zipp==3.17.0
